@@ -1,12 +1,20 @@
-const TeamMember = ({ image, name, twitter, role, description }) => (
+interface TeamMemberProps {
+    image: string;
+    name: string;
+    twitter: string;
+    role: string;
+    description: string;
+  }
+  
+  const TeamMember = ({ image, name, twitter, role, description }: TeamMemberProps) => (
     <div className="bg-white p-6 rounded-3xl shadow-lg text-center">
-      <img 
-        src={image} 
+      <img
+        src={image}
         alt={name}
         className="w-32 h-32 rounded-full mx-auto mb-4"
       />
       <h3 className="text-xl font-semibold text-gray-800 mb-2">{name}</h3>
-      <a 
+      <a
         href={`https://twitter.com/${twitter.replace('@', '')}`}
         className="text-pink-500 hover:underline inline-block mb-3"
       >
@@ -16,9 +24,9 @@ const TeamMember = ({ image, name, twitter, role, description }) => (
       <p className="text-gray-500 text-sm">{description}</p>
     </div>
   );
-
-const MeetOurTeam = () => {
-    const teamMembers = [
+  
+  const MeetOurTeam = () => {
+    const teamMembers: TeamMemberProps[] = [
       {
         image: "/img/member3.jpg",
         name: "Humberto",
@@ -62,5 +70,5 @@ const MeetOurTeam = () => {
       </div>
     );
   };
-
+  
   export default MeetOurTeam;
