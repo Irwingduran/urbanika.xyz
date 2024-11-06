@@ -1,10 +1,17 @@
 import { useState } from 'react';
 
+interface TimelineEvent {
+  date: string;
+  title: string;
+  subtitle?: string;
+  link: string;
+}
+
 const UrbanRegeneration = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  const timelineEvents = [
+  const timelineEvents: TimelineEvent[] = [
     {
       date: "June 30th 2024",
       title: "Neighborhood governance:",
@@ -58,7 +65,7 @@ const UrbanRegeneration = () => {
     }
   ];
 
-  const handleImageClick = (imageSrc) => {
+  const handleImageClick = (imageSrc: string) => {
     setSelectedImage(imageSrc);
     setIsModalOpen(true);
   };
@@ -71,19 +78,11 @@ const UrbanRegeneration = () => {
         <p className="text-gray-600 max-w-3xl mx-auto mb-8">
           It's a bus turned into a house and a school.
         </p>
-        <p className="text-gray-600 max-w-3xl mx-auto">
-          We've achieved an important level of sovereignty, which is useful for every house and
-          building. The bus produces food, generates 100% of its energy needs from the sun and
-          the wind, treats 100% of its grey waters into drinkable water, harvests rain water too,
-          treats 100% of our organic waste and turns it into protein, oil, and compost at least 3x
-          faster than with worms. In the near future we will even produce our own Diesel from
-          microwaving plastics.
-        </p>
       </div>
 
       {/* Large Images Section */}
-      <div className=" gap-8 mb-12">
-         <img
+      <div className="gap-8 mb-12">
+        <img
           src="/img/Untitled.webp"
           alt="Bus exterior"
           className="w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
@@ -91,7 +90,7 @@ const UrbanRegeneration = () => {
         />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-         <img
+        <img
           src="/img/Bus.webp"
           alt="Bus exterior"
           className="w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
@@ -137,10 +136,14 @@ const UrbanRegeneration = () => {
 
       {/* Image Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-             onClick={() => setIsModalOpen(false)}>
-          <div className="bg-white p-4 rounded-lg max-w-4xl w-full relative"
-               onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div 
+            className="bg-white p-4 rounded-lg max-w-4xl w-full relative"
+            onClick={e => e.stopPropagation()}
+          >
             <button
               className="absolute right-4 top-4 p-2 hover:bg-gray-100 rounded-full"
               onClick={() => setIsModalOpen(false)}
