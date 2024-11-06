@@ -1,5 +1,3 @@
-import img from '../assets/img/member3.jpg'
-
 const TeamMember = ({ image, name, twitter, role, description }) => (
     <div className="bg-white p-6 rounded-3xl shadow-lg text-center">
       <img 
