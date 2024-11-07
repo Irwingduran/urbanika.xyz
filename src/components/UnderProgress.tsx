@@ -37,7 +37,7 @@ const UnderProgress = () => {
           
           <button 
             className="bg-[#70C7D3] hover:bg-[#5BB8C4] text-white font-medium px-8 py-3 rounded-md transition-colors"
-            onClick={() => window.location.href = '#telegram'}
+            onClick={() => window.location.href = 'https://t.me/+i5tEIvodgZk1MGI5'}
           >
             Join our Telegram channel
           </button>

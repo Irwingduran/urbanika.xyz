@@ -35,13 +35,6 @@ interface TeamMemberProps {
         description: "In blockchain tech since 2017."
       },
       {
-        image: "/img/member2.jpg",
-        name: "Anna",
-        twitter: "@KaicAnna",
-        role: "MSc Marketing",
-        description: "Specialized in web3 fundraising and project analysis since 2021."
-      },
-      {
         image: "/img/member1.jpg",
         name: "Sofia",
         twitter: "@0xSofiverse",
@@ -54,7 +47,14 @@ interface TeamMemberProps {
         twitter: "@Irwingduran",
         role: "Full-stack web3 developer",
         description: "Multi-chain hackathon winner."
-      }
+      },
+      {
+        image: "/img/member2.jpg",
+        name: "Anna",
+        twitter: "@KaicAnna",
+        role: "MSc Marketing",
+        description: "Specialized in web3 fundraising and project analysis since 2021."
+      },
     ];
   
     return (

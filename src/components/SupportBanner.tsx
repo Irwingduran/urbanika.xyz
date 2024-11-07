@@ -5,6 +5,7 @@ const SupportBanner = () => {
         <p className="text-2xl mb-8">These rounds are active!</p>
         
         <div className="flex justify-center items-center gap-16">
+            <a href="https://giveth.io/es/project/urbanika">
           <div className="text-center">
             <div className="w-16 h-16 mx-auto mb-2">
               <img 
@@ -16,6 +17,7 @@ const SupportBanner = () => {
             <p className="font-medium">Giveth</p>
             <p className="text-sm">Urbanika</p>
           </div>
+            </a>
   
           <div className="text-center">
             <div className="w-14 h-14 mx-auto mb-2">

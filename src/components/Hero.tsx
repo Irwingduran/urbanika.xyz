@@ -19,9 +19,11 @@ const Hero = () => {
           We evolve cities into Smart, Regenerative, and Autonomous communities.
         </h1>
         
-        <button className="bg-cyan-400 hover:bg-cyan-500 text-white font-medium px-8 py-3 rounded-md transition-colors">
+        <a href="#initiatives">
+            <button className="bg-cyan-400 hover:bg-cyan-500 text-white font-medium px-8 py-3 rounded-md transition-colors">
           Explore our work
         </button>
+            </a>
       </div>
     </div>
   );

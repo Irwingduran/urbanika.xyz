@@ -33,7 +33,7 @@ const Navbar = () => {
     { link: "Home", path: "home" },
     { link: "About us", path: "about" },
     { link: "Initiatives", path: "initiatives" },
-    { link: "Support us", path: "blog" },
+    { link: "Support us", path: "support" },
     { link: "Contact", path: "contact" },
   ];
 

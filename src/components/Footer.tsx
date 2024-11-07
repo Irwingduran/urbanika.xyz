@@ -13,7 +13,7 @@ const Footer = () => {
         <div className="space-y-2">
           <p className="hover:underline cursor-pointer"><a href="http://x.com/0xurbanika">Twitter</a></p>
           <p className="hover:underline cursor-pointer"><a href="https://www.instagram.com/0xurbanika/">Instagram</a></p>
-          <p className="hover:underline cursor-pointer"><a href="http://x.com/0xurbanika">Farcaster</a></p>
+          <p className="hover:underline cursor-pointer"><a href="https://warpcast.com/urbanika">Farcaster</a></p>
         </div>
       </div>
     );

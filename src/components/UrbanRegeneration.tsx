@@ -56,13 +56,33 @@ const UrbanRegeneration = () => {
     {
       date: "April 26th 2024",
       title: "Delivery of the architectural project.",
-      link: "#"
+      link: "https://x.com/0xUrbanika/status/1783667090479575548?ref_src=twsrc%5Etfw%7Ctwcamp%5Etweetembed%7Ctwterm%5E1783667090479575548%7Ctwgr%5E21cb36b965b1b4980ce641bbcf9f8b0c8f80f37c%7Ctwcon%5Es1_c10&ref_url=https%3A%2F%2Furbanika.notion.site%2FUrbanika-304277770b0e418ea279548983c3c0db%3Fp%3Dd683ea8d7b354d34bde3a675b37f4dfbpm%3Dc"
     },
     {
       date: "April 24th 2024",
       title: "Dry toilet mode explanation.",
-      link: "#"
-    }
+      link: "https://x.com/0xUrbanika/status/1783145837884785058?ref_src=twsrc%5Etfw%7Ctwcamp%5Etweetembed%7Ctwterm%5E1783145837884785058%7Ctwgr%5E21cb36b965b1b4980ce641bbcf9f8b0c8f80f37c%7Ctwcon%5Es1_c10&ref_url=https%3A%2F%2Furbanika.notion.site%2FUrbanika-304277770b0e418ea279548983c3c0db%3Fp%3Dd683ea8d7b354d34bde3a675b37f4dfbpm%3Dc"
+    },
+    {
+        date: "April 22nd 2024",
+        title: "Compost design.",
+        link: "https://x.com/0xUrbanika/status/1782448421346971742?ref_src=twsrc%5Etfw%7Ctwcamp%5Etweetembed%7Ctwterm%5E1782448421346971742%7Ctwgr%5E21cb36b965b1b4980ce641bbcf9f8b0c8f80f37c%7Ctwcon%5Es1_c10&ref_url=https%3A%2F%2Furbanika.notion.site%2FUrbanika-304277770b0e418ea279548983c3c0db%3Fp%3Dd683ea8d7b354d34bde3a675b37f4dfbpm%3Dc"
+      },
+      {
+        date: "February 27th 2024",
+        title: "Updates on various topics.",
+        link: "https://x.com/0xUrbanika/status/1762608411164758217?ref_src=twsrc%5Etfw%7Ctwcamp%5Etweetembed%7Ctwterm%5E1762608411164758217%7Ctwgr%5E21cb36b965b1b4980ce641bbcf9f8b0c8f80f37c%7Ctwcon%5Es1_c10&ref_url=https%3A%2F%2Furbanika.notion.site%2FUrbanika-304277770b0e418ea279548983c3c0db%3Fp%3Dd683ea8d7b354d34bde3a675b37f4dfbpm%3Dc"
+      },
+      {
+        date: "February 1st 2024",
+        title: "ETH Cinco de Mayo’s Hackathon at Cholula, Puebla.",
+        link: "https://x.com/0xUrbanika/status/1753145674915307553?ref_src=twsrc%5Etfw%7Ctwcamp%5Etweetembed%7Ctwterm%5E1753145674915307553%7Ctwgr%5E21cb36b965b1b4980ce641bbcf9f8b0c8f80f37c%7Ctwcon%5Es1_c10&ref_url=https%3A%2F%2Furbanika.notion.site%2FUrbanika-304277770b0e418ea279548983c3c0db%3Fp%3Dd683ea8d7b354d34bde3a675b37f4dfbpm%3Dc"
+      },
+      {
+        date: "January 25th 2024",
+        title: "Ugly surprise: the ceiling was rotten.",
+        link: "https://x.com/0xUrbanika/status/1750633933153186040?ref_src=twsrc%5Etfw%7Ctwcamp%5Etweetembed%7Ctwterm%5E1750633933153186040%7Ctwgr%5E21cb36b965b1b4980ce641bbcf9f8b0c8f80f37c%7Ctwcon%5Es1_c10&ref_url=https%3A%2F%2Furbanika.notion.site%2FUrbanika-304277770b0e418ea279548983c3c0db%3Fp%3Dd683ea8d7b354d34bde3a675b37f4dfbpm%3Dc"
+      }
   ];
 
   const handleImageClick = (imageSrc: string) => {
@@ -111,7 +131,7 @@ const UrbanRegeneration = () => {
         </h2>
         <button 
           className="bg-teal-500 hover:bg-teal-600 text-white px-8 py-2 rounded-md transition-colors"
-          onClick={() => window.location.href = '#contact'}
+          onClick={() => window.location.href = 'https://bit.ly/Agenda-Regeneracion-Urbana'}
         >
           Book a call with us!
         </button>

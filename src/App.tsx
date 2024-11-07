@@ -34,10 +34,10 @@ function App() {
     <div>
     <ParticipatorySections/>  
     </div>
-    <div>
-      <DecidimOS/>
+    <div id='decidimos'> {/* hero buttom */}
+    <DecidimOS/>
     </div>
-    <div>
+    <div> {/* pink banner */}
     <CircularEconomy/> 
     </div>
     <div>
@@ -51,9 +51,11 @@ function App() {
     <div>
     <PostCapitalistOntoshift/>  
     </div>
-    <div>
+    <div id='support'>
     <SupportBanner/>  
     <MainMessage/>
+    </div>
+    <div id='contact'>
     <Footer/>
     </div>
     </>
