@@ -27,7 +27,7 @@ interface FeatureCardProps {
     ];
   
     return (
-      <div className="min-h-screen bg-gray-50 px-4 py-16 rounded-3xl">
+      <div className="h-fit bg-gray-50 px-4 py-16 rounded-3xl">
         {/* Main Container */}
         <div className="max-w-6xl mx-auto">
           {/* Header Section */}
