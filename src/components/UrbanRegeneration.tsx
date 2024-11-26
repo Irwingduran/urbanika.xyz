@@ -51,7 +51,7 @@ const UrbanRegeneration = () => {
     {
       date: "April 29th 2024",
       title: "Biofilter explanation.",
-      link: "#"
+      link: "https://urbanika.notion.site/April-29th-Bio-filter-explanation-6e48fd05ace748a0a59630b62ac8699a"
     },
     {
       date: "April 26th 2024",
