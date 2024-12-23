@@ -31,7 +31,7 @@ function App() {
     <OurStory/>
     <MeetOurTeam/>
     </div>
-    <div id='Initiatives'> {/* hero buttom */}
+    <div id='initiatives'> {/* hero buttom */}
     <ParticipatorySections/>    
     <DecidimOS/>
     </div>
