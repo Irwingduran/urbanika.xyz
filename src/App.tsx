@@ -31,10 +31,8 @@ function App() {
     <OurStory/>
     <MeetOurTeam/>
     </div>
-    <div>
-    <ParticipatorySections/>  
-    </div>
-    <div id='decidimos'> {/* hero buttom */}
+    <div id='Initiatives'> {/* hero buttom */}
+    <ParticipatorySections/>    
     <DecidimOS/>
     </div>
     <div> {/* pink banner */}
