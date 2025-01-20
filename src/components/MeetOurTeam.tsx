@@ -48,13 +48,6 @@ interface TeamMemberProps {
         role: "Full-stack web3 developer",
         description: "Multi-chain hackathon winner."
       },
-      {
-        image: "/img/member2.jpg",
-        name: "Anna",
-        twitter: "@KaicAnna",
-        role: "MSc Marketing",
-        description: "Specialized in web3 fundraising and project analysis since 2021."
-      },
     ];
   
     return (
