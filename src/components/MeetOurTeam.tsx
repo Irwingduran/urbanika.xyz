@@ -55,7 +55,7 @@ interface TeamMemberProps {
       <h2 className="text-4xl font-bold text-center text-gray-700 mb-12">
         Meet the team
       </h2>
-      <div className="grid grid-cols-1 justify-center md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto place-items-center">
         {teamMembers.map((member, index) => (
           <TeamMember key={index} {...member} />
         ))}
