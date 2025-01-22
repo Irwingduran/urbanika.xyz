@@ -26,36 +26,37 @@ interface TeamMemberProps {
   );
   
   const MeetOurTeam = () => {
-    const teamMembers: TeamMemberProps[] = [
-      {
-        image: "/img/member3.jpg",
-        name: "Humberto",
-        twitter: "@HumbertoBesso",
-        role: "MSc & MA in eGovernance and Public Sector Innovation",
-        description: "In blockchain tech since 2017."
-      },
-      {
-        image: "/img/member1.jpg",
-        name: "Sofia",
-        twitter: "@0xSofiverse",
-        role: "Architect and UI/UX designer",
-        description: "Specialized in Urbanism, local governance, and the design of immersive experiences."
-      },
-      {
-        image: "/img/member4.jpg",
-        name: "Irwing",
-        twitter: "@Irwingduran",
-        role: "Full-stack web3 developer",
-        description: "Multi-chain hackathon winner."
-      },
-    ];
-  
-    return (
+  const teamMembers: TeamMemberProps[] = [
+    {
+      image: "/img/member3.jpg",
+      name: "Humberto",
+      twitter: "@HumbertoBesso",
+      role: "MSc & MA in eGovernance and Public Sector Innovation",
+      description: "In blockchain tech since 2017.",
+    },
+    {
+      image: "/img/member1.jpg",
+      name: "Sofia",
+      twitter: "@0xSofiverse",
+      role: "Architect and UI/UX designer",
+      description:
+        "Specialized in Urbanism, local governance, and the design of immersive experiences.",
+    },
+    {
+      image: "/img/member4.jpg",
+      name: "Irwing",
+      twitter: "@Irwingduran",
+      role: "Full-stack web3 developer",
+      description: "Multi-chain hackathon winner.",
+    },
+  ];
+
+  return (
     <div className="py-16 px-4">
       <h2 className="text-4xl font-bold text-center text-gray-700 mb-12">
         Meet the team
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto place-items-center">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
         {teamMembers.map((member, index) => (
           <TeamMember key={index} {...member} />
         ))}
@@ -63,5 +64,5 @@ interface TeamMemberProps {
     </div>
   );
 };
-  
-  export default MeetOurTeam;
+
+export default MeetOurTeam;
