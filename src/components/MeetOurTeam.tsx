@@ -49,6 +49,13 @@ interface TeamMemberProps {
       role: "Full-stack web3 developer",
       description: "Multi-chain hackathon winner.",
     },
+      {
+      image: "/img/member.jpg",
+      name: "Alejandra",
+      twitter: "@AleVerde999",
+      role: "MSc in Environmental Risks Management",
+      description: "Biologist specialized in ecological assessments & ReFi.",
+    },
   ];
 
   return (
