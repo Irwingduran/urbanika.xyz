@@ -1,31 +1,31 @@
 interface TeamMemberProps {
-    image: string;
-    name: string;
-    twitter: string;
-    role: string;
-    description: string;
-  }
-  
-  const TeamMember = ({ image, name, twitter, role, description }: TeamMemberProps) => (
-    <div className="bg-white p-6 rounded-3xl shadow-lg text-center">
-      <img
-        src={image}
-        alt={name}
-        className="w-32 h-32 rounded-full mx-auto mb-4"
-      />
-      <h3 className="text-xl font-semibold text-gray-800 mb-2">{name}</h3>
-      <a
-        href={`https://twitter.com/${twitter.replace('@', '')}`}
-        className="text-pink-500 hover:underline inline-block mb-3"
-      >
-        {twitter}
-      </a>
-      <p className="text-gray-600 mb-2">{role}</p>
-      <p className="text-gray-500 text-sm">{description}</p>
-    </div>
-  );
-  
-  const MeetOurTeam = () => {
+  image: string;
+  name: string;
+  twitter: string;
+  role: string;
+  description: string;
+}
+
+const TeamMember = ({ image, name, twitter, role, description }: TeamMemberProps) => (
+  <div className="bg-white p-6 rounded-3xl shadow-lg text-center">
+    <img
+      src={image}
+      alt={name}
+      className="w-32 h-32 rounded-full mx-auto mb-4"
+    />
+    <h3 className="text-xl font-semibold text-gray-800 mb-2">{name}</h3>
+    <a
+      href={`https://twitter.com/${twitter.replace('@', '')}`}
+      className="text-pink-500 hover:underline inline-block mb-3"
+    >
+      {twitter}
+    </a>
+    <p className="text-gray-600 mb-2">{role}</p>
+    <p className="text-gray-500 text-sm">{description}</p>
+  </div>
+);
+
+const MeetOurTeam = () => {
   const teamMembers: TeamMemberProps[] = [
     {
       image: "/img/member3.jpg",
@@ -49,7 +49,7 @@ interface TeamMemberProps {
       role: "Full-stack web3 developer",
       description: "Multi-chain hackathon winner.",
     },
-      {
+    {
       image: "/img/member.jpg",
       name: "Alejandra",
       twitter: "@AleVerde999",
@@ -63,7 +63,7 @@ interface TeamMemberProps {
       <h2 className="text-4xl font-bold text-center text-gray-700 mb-12">
         Meet the team
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
         {teamMembers.map((member, index) => (
           <TeamMember key={index} {...member} />
         ))}
