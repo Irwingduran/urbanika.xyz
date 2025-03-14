@@ -50,7 +50,7 @@ const MeetOurTeam = () => {
       description: "Multi-chain hackathon winner.",
     },
     {
-      image: "/img/member.jpg",
+      image: "/img/member5.jpeg",
       name: "Alejandra",
       twitter: "@AleVerde999",
       role: "MSc in Environmental Risks Management",
