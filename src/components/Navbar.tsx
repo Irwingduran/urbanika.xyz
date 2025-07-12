@@ -42,7 +42,7 @@ const Navbar = () => {
       <nav className={`py-4 lg:px-14 ${isSticky ? "sticky top-0 left-0 right-40 border-b bg-white duration-300" : ""}`}>
         <div className='flex justify-between items-center text-base gap-8 mx-1'>
           <a href="#home" className='text-2xl font-sans flex items-center space-x-3'>
-            <img src="/logo/logo.svg" alt="logo" width="70px" className='w-14 inline-block items-center'/>
+            <img src="/logo/logo.png" alt="logo" width="70px" className='w-14 inline-block items-center'/>
           </a>
 
           {/* nav items for large devices */}
