@@ -1,5 +1,5 @@
-import { Leaf } from 'lucide-react'
 import React from 'react'
+import { Leaf } from 'lucide-react'
 import { Button } from './ui/button'
 import Link from 'next/link'
 
@@ -10,13 +10,15 @@ const Footer = () => {
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-brand-yellow rounded-full flex items-center justify-center">
-                <Leaf className="h-5 w-5 text-brand-dark" />
-              </div>
-              <span className="text-xl font-bold">Urbánika</span>
-            </div>
+            <Link href="/" className="flex items-center gap-2" prefetch={false}>
+            <div className="w-12 h-12 rounded-full flex items-center justify-center">
+            <img src="/logo.svg" className="h-full w-full object-contain" />
+             </div>
+            <span className="text-xl font-bold text-brand-dark">Urbánika</span>
+           </Link>
+           </div>
             <p className="text-gray-300 mb-4">
-              Building the future of sustainable, autonomous, and regenerative cities through technology and community.
+              Construyendo el futuro de ciudades sostenibles, autónomas y regenerativas a través de la tecnología y la comunidad.
             </p>
             <div className="flex gap-4">
               <Button
@@ -37,37 +39,37 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 className="font-semibold mb-4">Initiatives</h4>
+            <h4 className="font-semibold mb-4">Iniciativas</h4>
             <ul className="space-y-2 text-gray-300">
               <li>
-                <Link href="#" className="hover:text-brand-yellow">
-                  DecidimOS
+                <Link href="/#initiatives" className="hover:text-brand-yellow">
+                  Autobús Eco-Tecnológico de Urbanika
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-brand-yellow">
-                  Urban Showroom
+                <Link href="/#bus-tech" className="hover:text-brand-yellow">
+                  Agendar Visita Casa Rodante
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-brand-yellow">
-                  Eco-Tech Directory
+                <Link href="/#houses" className="hover:text-brand-yellow">
+                  Casa del Futuro
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold mb-4">Resources</h4>
+            <h4 className="font-semibold mb-4">Recursos</h4>
             <ul className="space-y-2 text-gray-300">
               <li>
                 <Link href="#" className="hover:text-brand-yellow">
-                  Courses
+                  Cursos
                 </Link>
               </li>
               <li>
                 <Link href="#" className="hover:text-brand-yellow">
-                  Publications
+                  Publicaciones
                 </Link>
               </li>
               <li>
@@ -84,26 +86,21 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 className="font-semibold mb-4">Connect</h4>
+            <h4 className="font-semibold mb-4">Conectar</h4>
             <ul className="space-y-2 text-gray-300">
               <li>
                 <Link href="#" className="hover:text-brand-yellow">
-                  Community
+                  Comunidad
                 </Link>
               </li>
               <li>
                 <Link href="#" className="hover:text-brand-yellow">
-                  Events
+                  Eventos
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-brand-yellow">
-                  Newsletter
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-brand-yellow">
-                  Contact
+                <Link href="/#contact" className="hover:text-brand-yellow">
+                  Contacto
                 </Link>
               </li>
             </ul>
@@ -111,13 +108,13 @@ const Footer = () => {
         </div>
 
         <div className="pt-8 border-t border-gray-700 flex flex-col sm:flex-row justify-between items-center text-sm text-gray-400">
-          <p>&copy; 2025 Urbanika. All rights reserved.</p>
+          <p>&copy; 2025 Urbánika. Todos los derechos reservados.</p>
           <div className="flex gap-4 mt-4 sm:mt-0">
             <Link href="#" className="hover:text-brand-yellow">
-              Privacy Policy
+              Política de Privacidad
             </Link>
             <Link href="#" className="hover:text-brand-yellow">
-              Terms of Service
+              Términos de Servicio
             </Link>
           </div>
         </div>

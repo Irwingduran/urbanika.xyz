@@ -18,16 +18,16 @@ const HeroSection
     </div>
     <div className="relative z-10 container mx-auto px-4 pt-20">
       <div className="animate-fade-in">
-        <Badge className="mb-4 bg-brand-aqua/50 text-white border-brand-aqua/20">
-          🌱 Building the Future Today
-        </Badge>
-        <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-brand-dark via-brand-aqua to-brand-dark">
-          Evolving Cities into Smart, Regenerative, & Autonomous Communities
-        </h1>
-        <p className="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-gray-600">
-          We leverage cutting-edge technology and collective intelligence to build flourishing urban environments that
-          prioritize both human and environmental well-being.
-        </p>
+       <Badge className="mb-4 bg-brand-aqua/50 text-white border-brand-aqua/20">
+      🌱 Construyendo el Futuro Hoy
+      </Badge>
+      <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-brand-dark via-brand-aqua to-brand-dark">
+       Evolucionando Ciudades hacia Comunidades Inteligentes, Regenerativas y Autónomas
+      </h1>
+      <p className="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-gray-600">
+       Aprovechamos tecnología de punta e inteligencia colectiva para construir entornos urbanos prósperos que priorizan el bienestar humano y ambiental.
+      </p>
+
         {/*  
         <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
           <Button size="lg" className="bg-brand-yellow text-brand-dark hover:bg-yellow-400 font-bold shadow-lg">

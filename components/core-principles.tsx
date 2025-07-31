@@ -11,23 +11,23 @@ const CorePrinciplesSection = () => {
     const principles = [
         {
           icon: Users,
-          title: "Decentralized",
+          title: "Descentralizado",
           description:
-            "People-powered systems that give communities control over their future through democratic participation.",
-          features: ["Community Voting", "Local Governance", "Peer Networks"],
+            "Sistemas impulsados por las personas que dan a las comunidades el control sobre su futuro a través de la participación democrática.",
+          features: ["Votación Comunitaria", "Gobierno Local", "Redes entre Pares"],
         },
         {
           icon: Bot,
-          title: "Autonomous",
+          title: "Autónomo",
           description:
-            "IoT, AI, and Blockchain automating processes based on human and nature's needs for optimal efficiency.",
-          features: ["Smart Infrastructure", "AI Decision Support", "Automated Systems"],
+            "IoT, IA y Blockchain automatizando procesos basados en las necesidades humanas y de la naturaleza para una eficiencia óptima.",
+          features: ["Infraestructura Inteligente", "Soporte de Decisiones con IA", "Sistemas Automatizados"],
         },
         {
           icon: Leaf,
-          title: "Regenerative",
-          description: "Circular economy principles embedded in the very design of the city and its sustainable processes.",
-          features: ["Zero Waste", "Renewable Energy", "Biodiversity Focus"],
+          title: "Regenerativo",
+          description: "Principios de economía circular integrados en el diseño mismo de la ciudad y sus procesos sostenibles.",
+          features: ["Cero Residuos", "Energía Renovable", "Enfoque en Biodiversidad"],
         },
       ]
 
@@ -35,8 +35,8 @@ const CorePrinciplesSection = () => {
     <section className="py-16 md:py-24 bg-gradient-to-br from-green-50 to-blue-50">
     <div className="container mx-auto px-4">
       <div className="text-center mb-12">
-        <h2 className="text-4xl md:text-5xl font-bold text-brand-dark">Three Pillars of Smart Cities</h2>
-        <p className="mt-2 text-lg text-gray-600">The foundation of our urban transformation approach</p>
+        <h2 className="text-4xl md:text-5xl font-bold text-brand-dark">Tres Pilares de las Ciudades Inteligentes</h2>
+        <p className="mt-2 text-lg text-gray-600">La base de nuestro enfoque de transformación urbana</p>
       </div>
       <div className="grid md:grid-cols-3 gap-8">
         {principles.map((principle, index) => (
@@ -69,4 +69,3 @@ const CorePrinciplesSection = () => {
 }
 
 export default CorePrinciplesSection
-

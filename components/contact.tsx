@@ -15,16 +15,16 @@ const ContactSection = () => {
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-brand-dark">Get In Touch</h2>
-            <p className="mt-2 text-lg text-gray-600">Ready to transform your community? Let's talk!</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-brand-dark">Contáctanos</h2>
+            <p className="mt-2 text-lg text-gray-600">¿Listo para transformar tu comunidad? ¡Hablemos!</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-12">
             <div>
-              <h3 className="text-2xl font-bold text-brand-dark mb-6">Start Your Journey</h3>
+              <h3 className="text-2xl font-bold text-brand-dark mb-6">Comienza tu viaje</h3>
               <p className="text-gray-600 mb-8">
-                Whether you're a city official, community leader, or passionate citizen, we're here to help you create
-                positive change in your urban environment.
+                Ya seas un funcionario municipal, líder comunitario o ciudadano apasionado, estamos aquí para ayudarte a crear
+                un cambio positivo en tu entorno urbano.
               </p>
 
               <div className="space-y-6">
@@ -33,8 +33,8 @@ const ContactSection = () => {
                     <Calendar className="h-6 w-6 text-brand-aqua" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-brand-dark">Book a Consultation</h4>
-                    <p className="text-gray-600">Free 30-minute strategy session</p>
+                    <h4 className="font-semibold text-brand-dark">Reserva una consulta</h4>
+                    <p className="text-gray-600">Sesión estratégica gratuita de 30 minutos</p>
                   </div>
                 </div>
 
@@ -43,8 +43,8 @@ const ContactSection = () => {
                     <MessageCircle className="h-6 w-6 text-brand-yellow" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-brand-dark">Join Our Community</h4>
-                    <p className="text-gray-600">Connect with like-minded changemakers</p>
+                    <h4 className="font-semibold text-brand-dark">Únete a nuestra comunidad</h4>
+                    <p className="text-gray-600">Conéctate con agentes de cambio afines</p>
                   </div>
                 </div>
 
@@ -53,8 +53,8 @@ const ContactSection = () => {
                     <Lightbulb className="h-6 w-6 text-green-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-brand-dark">Collaborate</h4>
-                    <p className="text-gray-600">Partner with us on innovative projects</p>
+                    <h4 className="font-semibold text-brand-dark">Colabora</h4>
+                    <p className="text-gray-600">Asóciate con nosotros en proyectos innovadores</p>
                   </div>
                 </div>
               </div>
@@ -65,27 +65,27 @@ const ContactSection = () => {
                 <form className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-brand-dark mb-1">First Name</label>
-                      <Input placeholder="John" />
+                      <label className="block text-sm font-medium text-brand-dark mb-1">Nombre</label>
+                      <Input placeholder="Juan" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-brand-dark mb-1">Last Name</label>
-                      <Input placeholder="Doe" />
+                      <label className="block text-sm font-medium text-brand-dark mb-1">Apellido</label>
+                      <Input placeholder="Pérez" />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-brand-dark mb-1">Email</label>
-                    <Input type="email" placeholder="john@example.com" />
+                    <label className="block text-sm font-medium text-brand-dark mb-1">Correo electrónico</label>
+                    <Input type="email" placeholder="juan@ejemplo.com" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-brand-dark mb-1">Organization</label>
-                    <Input placeholder="Your organization (optional)" />
+                    <label className="block text-sm font-medium text-brand-dark mb-1">Organización</label>
+                    <Input placeholder="Tu organización (opcional)" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-brand-dark mb-1">Message</label>
-                    <Textarea placeholder="Tell us about your project or how we can help..." rows={4} />
+                    <label className="block text-sm font-medium text-brand-dark mb-1">Mensaje</label>
+                    <Textarea placeholder="Cuéntanos sobre tu proyecto o cómo podemos ayudarte..." rows={4} />
                   </div>
-                  <Button className="w-full bg-brand-aqua text-white hover:bg-teal-600">Send Message</Button>
+                  <Button className="w-full bg-brand-aqua text-white hover:bg-teal-600">Enviar mensaje</Button>
                 </form>
               </CardContent>
             </Card>
