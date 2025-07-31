@@ -35,7 +35,7 @@ const CorePrinciplesSection = () => {
     <section className="py-16 md:py-24 bg-gradient-to-br from-green-50 to-blue-50">
     <div className="container mx-auto px-4">
       <div className="text-center mb-12">
-        <h2 className="text-3xl md:text-4xl font-bold text-brand-dark">Three Pillars of Smart Cities</h2>
+        <h2 className="text-4xl md:text-5xl font-bold text-brand-dark">Three Pillars of Smart Cities</h2>
         <p className="mt-2 text-lg text-gray-600">The foundation of our urban transformation approach</p>
       </div>
       <div className="grid md:grid-cols-3 gap-8">

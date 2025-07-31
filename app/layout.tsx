@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import SocialMediaButtons from '@/components/social-media-buttons'
 
 export const metadata: Metadata = {
   title: 'Urbánika',
@@ -19,7 +20,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+      <SocialMediaButtons />
+        </body>
     </html>
   )
 }

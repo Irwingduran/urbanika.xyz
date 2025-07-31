@@ -45,15 +45,11 @@ const BusBooking = () => {
         <section className="py-16 md:py-24 bg-gradient-to-br from-brand-yellow/10 via-white to-brand-aqua/10">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <Badge className="mb-4 bg-brand-yellow/20 text-brand-dark border-brand-yellow/30">
-            🚌 Experience the Future
-          </Badge>
-          <h2 className="text-3xl md:text-4xl font-bold text-brand-dark">Visit The Urbanika's Eco-Tech Bus</h2>
+          <h2 className="text-4xl md:text-5xl font-bold text-brand-dark">Visit The Urbanika's Eco-Tech Bus</h2>
           <p className="mt-2 text-lg text-gray-600">
             Book your exclusive tour of the world's first urban regeneration bus
           </p>
         </div>
-
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center mb-12">
             <div className="space-y-6">
