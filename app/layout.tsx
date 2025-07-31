@@ -2,10 +2,15 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.dev',
+  title: 'Urbánika',
+  description: 'Urbanika is a platform that allows users to create and manage their urban spaces.',
+  icons: {
+    icon: '/logo.svg',
+    apple: '/logo.svg',
+  },
 }
+
+
 
 export default function RootLayout({
   children,
