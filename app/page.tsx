@@ -13,6 +13,7 @@ import TeamSection from "@/components/team-section"
 import CommunitySection from "@/components/community"
 import AboutSection from "@/components/about"
 import ContactSection from "@/components/contact"
+import InvestmentSidebar from "@/components/investment-sidebar"
 
 export default function HomePage() {
   return (
@@ -23,6 +24,7 @@ export default function HomePage() {
 
       <Navbar />
       <main className="overflow-x-hidden">
+        <InvestmentSidebar/>
         <HeroSection />
         <div id="initiatives">
         <InitiativesSection />

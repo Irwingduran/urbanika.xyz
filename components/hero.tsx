@@ -9,7 +9,7 @@ const HeroSection
     <div className="absolute inset-0 z-0">
       <Image
         src="/Bus.png"
-        alt="Smart City Landscape"
+        alt="Paisaje de Ciudad Inteligente"
         layout="fill"
         objectFit="cover"
         className="opacity-90"
