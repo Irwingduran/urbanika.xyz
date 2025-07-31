@@ -4,10 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import Image from "next/image"
 import {
-  Home,
   Puzzle,
   DollarSign,
   Building2,
@@ -23,11 +20,8 @@ import {
   Wrench,
   Gift,
   ArrowRight,
-  Sparkles,
   Users,
   CheckCircle,
-  Calendar,
-  Globe,
 } from "lucide-react"
 
 const features = {
@@ -37,12 +31,11 @@ const features = {
     title: "Diseño arquitectónico personalizable",
     emoji: "🧩",
     description:
-      "Cada casa Urbanika nace de tus decisiones. En nuestro constructor digital eliges módulos —baño, cocina, sala, habitación, etc.— y los combinas a tu medida en tamaños de 6, 10, 20 o 40 pies. También decides qué ecotecnias incluir y el nivel de entrega (llave en mano o instalación propia). Cada combinación se registra como certificado de propiedad en la blockchain de Scroll.",
+      "Cada casa Urbanika nace de tus decisiones. En nuestro constructor digital eliges módulos (baño, cocina, sala, etc.) y los combinas a tu medida en tamaños de 6, 10, 20 o 40 pies. También decides qué ecotecnias incluir y el nivel de entrega (llave en mano o instalación propia). Con certificado de propiedad en la blockchain de Scroll.",
     cta: "Diseña una casa tan única como tú.",
     category: "Personalización",
     color: "from-gray-600 to-slate-600",
     bgColor: "bg-gary-50",
-    image: "/placeholder.svg?width=400&height=300&text=Modular+Design",
   },
   affordable: {
     id: "affordable",
@@ -55,7 +48,6 @@ const features = {
     category: "Accesibilidad",
     color: "from-green-500 to-emerald-500",
     bgColor: "bg-gray-50",
-    image: "/placeholder.svg?width=400&height=300&text=Affordable+Housing",
   },
   modular: {
     id: "modular",
@@ -68,7 +60,6 @@ const features = {
     category: "Flexibilidad",
     color: "from-blue-500 to-cyan-500",
     bgColor: "bg-gray-50",
-    image: "/placeholder.svg?width=400&height=300&text=Modular+Expansion",
   },
   mobile: {
     id: "mobile",
@@ -81,7 +72,6 @@ const features = {
     category: "Movilidad",
     color: "from-orange-500 to-red-500",
     bgColor: "bg-gray-50",
-    image: "/placeholder.svg?width=400&height=300&text=Mobile+Home",
   },
   food: {
     id: "food",
@@ -94,7 +84,6 @@ const features = {
     category: "Sostenibilidad",
     color: "from-green-600 to-lime-500",
     bgColor: "bg-gray-50",
-    image: "/placeholder.svg?width=400&height=300&text=Urban+Farming",
   },
   water: {
     id: "water",
@@ -107,7 +96,6 @@ const features = {
     category: "Sostenibilidad",
     color: "from-blue-600 to-teal-500",
     bgColor: "bg-gray-50",
-    image: "/placeholder.svg?width=400&height=300&text=Water+Systems",
   },
   energy: {
     id: "energy",
@@ -120,7 +108,6 @@ const features = {
     category: "Sostenibilidad",
     color: "from-yellow-500 to-orange-500",
     bgColor: "bg-gray-50",
-    image: "/placeholder.svg?width=400&height=300&text=Solar+Energy",
   },
   income: {
     id: "income",
@@ -133,7 +120,6 @@ const features = {
     category: "Economía",
     color: "from-amber-500 to-yellow-600",
     bgColor: "bg-gray-50",
-    image: "/placeholder.svg?width=400&height=300&text=Smart+Income",
   },
   waste: {
     id: "waste",
@@ -146,7 +132,6 @@ const features = {
     category: "Sostenibilidad",
     color: "from-emerald-500 to-green-600",
     bgColor: "bg-gray-50",
-    image: "/placeholder.svg?width=400&height=300&text=Waste+Management",
   },
   automation: {
     id: "automation",
@@ -159,7 +144,6 @@ const features = {
     category: "Tecnología",
     color: "from-indigo-500 to-purple-600",
     bgColor: "bg-gray-50",
-    image: "/placeholder.svg?width=400&height=300&text=Smart+Automation",
   },
   bioconstruction: {
     id: "bioconstruction",
@@ -172,7 +156,6 @@ const features = {
     category: "Construcción",
     color: "from-green-700 to-emerald-600",
     bgColor: "bg-gray-50",
-    image: "/placeholder.svg?width=400&height=300&text=Bio+Construction",
   },
   delivery: {
     id: "delivery",
@@ -184,7 +167,6 @@ const features = {
     category: "Servicio",
     color: "from-teal-500 to-cyan-600",
     bgColor: "bg-gray-50",
-    image: "/placeholder.svg?width=400&height=300&text=Fast+Delivery",
   },
   maintenance: {
     id: "maintenance",
@@ -197,7 +179,6 @@ const features = {
     category: "Servicio",
     color: "from-gray-600 to-slate-600",
     bgColor: "bg-gray-50",
-    image: "/placeholder.svg?width=400&height=300&text=Maintenance",
   },
   rewards: {
     id: "rewards",
@@ -210,7 +191,6 @@ const features = {
     category: "Comunidad",
     color: "from-pink-500 to-rose-500",
     bgColor: "bg-gray-50",
-    image: "/placeholder.svg?width=400&height=300&text=Rewards+Program",
   },
 }
 
@@ -337,17 +317,10 @@ export default function HomeSalesSection() {
                       </div>
                     </div>
 
-                    <div className="relative">
-                      <Image
-                        src={currentFeature.image || "/placeholder.svg"}
-                        width={400}
-                        height={300}
-                        alt={currentFeature.title}
-                        className="rounded-lg shadow-lg w-full h-64 object-cover"
-                      />
-                      <div
-                        className={`absolute inset-0 bg-gradient-to-t ${currentFeature.color} opacity-20 rounded-lg`}
-                      ></div>
+                    <div className="relative flex items-center justify-center">
+                      <div className={`p-12 rounded-lg bg-gradient-to-br ${currentFeature.color} text-white flex items-center justify-center`}>
+                        <currentFeature.icon className="h-24 w-24" />
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -356,64 +329,64 @@ export default function HomeSalesSection() {
           </div>
         </div>
 
- {/* Simple Clean Call to Action */}
-<Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-lg">
-  <CardContent className="p-8 md:p-10">
-    {/* Header */}
-    <div className="text-center mb-8">
-      <h3 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
-        Build Your Sustainable Future
-      </h3>
-      <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-        Join the modular housing revolution today
-      </p>
-    </div>
+        {/* Simple Clean Call to Action */}
+        <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-lg">
+          <CardContent className="p-8 md:p-10">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <h3 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
+                Build Your Sustainable Future
+              </h3>
+              <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                Join the modular housing revolution today
+              </p>
+            </div>
 
-    {/* Cards */}
-    <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-      {/* Waitlist Card */}
-      <Card className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-brand-aqua transition-colors">
-        <CardContent className="p-6 text-center">
-          <div className="mx-auto mb-4 bg-brand-aqua/10 p-3 rounded-full w-fit">
-            <Users className="h-8 w-8 text-brand-aqua" />
-          </div>
-          <h4 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Join Waitlist</h4>
-          <p className="text-gray-600 dark:text-gray-300 mb-4">
-            Be first to know when we're available in your area
-          </p>
-          <div className="flex gap-2">
-             <Button onClick={() => window.open("https://tally.so/r/wzbO9k")} className="w-full bg-brand-aqua hover:bg-brand-aqua/90 text-white font-medium">
-           Join Waitlist de Urbanika
-          </Button>
-          </div>
-        </CardContent>
-      </Card>
+            {/* Cards */}
+            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              {/* Waitlist Card */}
+              <Card className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-brand-aqua transition-colors">
+                <CardContent className="p-6 text-center">
+                  <div className="mx-auto mb-4 bg-brand-aqua/10 p-3 rounded-full w-fit">
+                    <Users className="h-8 w-8 text-brand-aqua" />
+                  </div>
+                  <h4 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Join Waitlist</h4>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">
+                    Be first to know when we're available in your area
+                  </p>
+                  <div className="flex gap-2">
+                    <Button onClick={() => window.open("https://tally.so/r/wzbO9k")} className="w-full bg-brand-aqua hover:bg-brand-aqua/90 text-white font-medium">
+                      Join Waitlist de Urbanika
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
 
-      {/* NFT Card */}
-      <Card className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-brand-yellow transition-colors">
-        <CardContent className="p-6 text-center">
-          <div className="mx-auto mb-4 bg-brand-yellow/10 p-3 rounded-full w-fit">
-            <Coins className="h-8 w-8 text-brand-yellow" />
-          </div>
-          <h4 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Invest in NFTs</h4>
-          <p className="text-gray-600 dark:text-gray-300 mb-4">
-            Own a piece of the future housing economy
-          </p>
-          <Button onClick={() => window.open("https://urbanika.xyz/investment")} className="w-full bg-brand-yellow hover:bg-brand-yellow/90 text-gray-900 font-medium">
-            View NFT Collection
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+              {/* NFT Card */}
+              <Card className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-brand-yellow transition-colors">
+                <CardContent className="p-6 text-center">
+                  <div className="mx-auto mb-4 bg-brand-yellow/10 p-3 rounded-full w-fit">
+                    <Coins className="h-8 w-8 text-brand-yellow" />
+                  </div>
+                  <h4 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Invest in NFTs</h4>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">
+                    Own a piece of the future housing economy
+                  </p>
+                  <Button onClick={() => window.open("https://urbanika.xyz/investment")} className="w-full bg-brand-yellow hover:bg-brand-yellow/90 text-gray-900 font-medium">
+                    View NFT Collection
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
 
-    {/* Footer */}
-    <div className="text-center mt-8">
-      <p className="text-sm text-gray-500 dark:text-gray-400">
-        🌱 500+ families on waitlist • 🏠 First deliveries Q2 2025
-      </p>
-    </div>
-  </CardContent>
-</Card>
+            {/* Footer */}
+            <div className="text-center mt-8">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                🌱 500+ families on waitlist • 🏠 First deliveries Q2 2025
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </section>
   )

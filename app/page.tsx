@@ -24,16 +24,26 @@ export default function HomePage() {
       <Navbar />
       <main className="overflow-x-hidden">
         <HeroSection />
+        <div id="initiatives">
         <InitiativesSection />
+        </div>
         <CorePrinciplesSection />
+        <div id="about">
         <AboutSection />
+        </div>
+        <div id="bus-tech">
         <BusBooking />
+        </div>
+        <div id="houses">
         <HomeSalesSection/>
+        </div>
         <ConsultingServicesSection/>
         <TeamSection />
         <EducationalOfferingSection/>
         <CommunitySection />
+        <div id="contact">
         <ContactSection />
+        </div>
         <Footer />
       </main>
     </div>
