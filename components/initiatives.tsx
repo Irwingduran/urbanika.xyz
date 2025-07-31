@@ -27,7 +27,7 @@ const IniciativesSection = () => {
     <section id="initiatives" className="py-16 md:py-24 bg-white">
     <div className="container mx-auto px-4">
       <div className="text-center mb-12">
-        <h2 className="text-3xl md:text-4xl font-bold text-brand-dark">Our Key Initiatives</h2>
+        <h2 className="text-4xl md:text-5xl font-bold text-brand-dark">Our Key Initiatives</h2>
         <p className="mt-2 text-lg text-gray-600">Pioneering solutions for tomorrow's cities</p>
       </div>
       <Tabs defaultValue="urbanikas-bus" className="w-full">

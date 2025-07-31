@@ -21,7 +21,7 @@ const HeroSection
         <Badge className="mb-4 bg-brand-aqua/50 text-white border-brand-aqua/20">
           🌱 Building the Future Today
         </Badge>
-        <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-brand-dark via-brand-aqua to-brand-dark">
+        <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-brand-dark via-brand-aqua to-brand-dark">
           Evolving Cities into Smart, Regenerative, & Autonomous Communities
         </h1>
         <p className="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-gray-600">

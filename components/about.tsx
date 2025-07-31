@@ -7,7 +7,7 @@ const AboutSection = () => {
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <h2 className="text-3xl md:text-4xl font-bold text-brand-dark mb-6">Our Story</h2>
+            <h2 className="text-4xl md:text-5xl font-bold text-brand-dark mb-6">Our Story</h2>
             <div className="space-y-4 text-lg text-gray-600">
               <p>
                 Since 2015, Urbanika has been at the forefront of urban innovation, experimenting with commons-based
@@ -35,16 +35,13 @@ const AboutSection = () => {
           </div>
           <div className="relative">
             <Image
-              src="/placeholder.svg?width=600&height=400"
-              width={600}
-              height={400}
+              src="/about-image.jpeg"
+              width={500}
+              height={250}
               alt="Team working on urban project"
               className="rounded-lg shadow-2xl"
             />
-            <div className="absolute -bottom-6 -right-6 bg-brand-yellow text-brand-dark p-4 rounded-lg shadow-lg">
-              <div className="text-2xl font-bold">150+</div>
-              <div className="text-sm">Projects Completed</div>
-            </div>
+           
           </div>
         </div>
       </div>
