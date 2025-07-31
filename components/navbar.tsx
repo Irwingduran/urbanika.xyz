@@ -22,7 +22,7 @@ const Navbar = () => {
       }`}
     >
       <div className="container mx-auto flex items-center justify-between">
-        <Link href="#" className="flex items-center gap-2" prefetch={false}>
+        <Link href="/" className="flex items-center gap-2" prefetch={false}>
           <div className="w-12 h-12 rounded-full flex items-center justify-center">
             <img src="/logo.svg" className="h-full w-full object-contain" />
           </div>
