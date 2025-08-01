@@ -26,7 +26,6 @@ const Navbar = () => {
           <div className="w-12 h-12 rounded-full flex items-center justify-center">
             <img src="/logo.svg" className="h-full w-full object-contain" />
           </div>
-          <span className="text-xl font-bold text-brand-dark">Urbánika</span>
         </Link>
 
         {/* Desktop nav */}
