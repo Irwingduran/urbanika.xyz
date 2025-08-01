@@ -53,10 +53,6 @@ export default function InvestmentSidebar() {
               <span>Revenue-based financing</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <Coins className="h-4 w-4 text-white" />
-              <span>$50K MXN por casa vendida</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
               <ChevronRight className="h-4 w-4 text-white" />
               <span>Acceso prioritario</span>
             </div>
