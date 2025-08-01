@@ -382,7 +382,7 @@ export default function HomeSalesSection() {
             {/* Footer */}
             <div className="text-center mt-8">
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                🌱 500+ families on waitlist • 🏠 First deliveries Q2 2025
+                🌱 500+ families on waitlist • 🏠 First deliveries Q3 2025
               </p>
             </div>
           </CardContent>
