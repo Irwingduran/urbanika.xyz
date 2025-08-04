@@ -43,7 +43,7 @@ const TeamSection = () => {
     {
       name: "Brenda",
       handle: "@Be_magra",
-      role: "Social Media Manager",
+      role: "Green MBA & Social Media",
       specialty: "Marketing",
       img: "/member/000001member.jpg",
     },
