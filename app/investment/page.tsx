@@ -589,13 +589,6 @@ export default function NFTInvestmentComponent() {
                   <Heart className="mr-2 h-5 w-5" />
                   Invertir Ahora
                 </Button>
-                <Button
-                  variant="outline"
-                  className="border-white text-white hover:bg-white/20 bg-transparent font-bold text-lg px-8 py-4"
-                >
-                  <MessageCircle className="mr-2 h-5 w-5" />
-                  Más Información
-                </Button>
               </div>
             </div>
           </CardContent>
