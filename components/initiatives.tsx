@@ -32,27 +32,17 @@ const IniciativesSection = () => {
 
       </div>
       <Tabs defaultValue="urbanikas-bus" className="w-full">
-      <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 bg-gray-100 mb-8 sm:mb-20">
-      <TabsTrigger
-      value="urbanikas-bus"
-      className="whitespace-normal text-sm sm:text-base px-4 py-3 text-center data-[state=active]:bg-brand-aqua data-[state=active]:text-white"
-      >
-     Autobús Eco-Tecnológico de Urbanika
-    </TabsTrigger>
-    <TabsTrigger
-    value="smart-homes-sales"
-    className="whitespace-normal text-sm sm:text-base px-4 py-3 text-center data-[state=active]:bg-brand-aqua data-[state=active]:text-white"
-    >
-    Venta de Casas Inteligentes
-    </TabsTrigger>
-    <TabsTrigger
-    value="eco-marketplace"
-    className="whitespace-normal text-sm sm:text-base px-4 py-3 text-center data-[state=active]:bg-brand-aqua data-[state=active]:text-white"
-   >
-    Eco-Marketplace
-    </TabsTrigger>
-   </TabsList>
-
+        <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 bg-gray-100 mb-8 sm:mb-20">
+          <TabsTrigger value="urbanikas-bus" className="data-[state=active]:bg-brand-aqua data-[state=active]:text-white">
+            Autobús Eco-Tecnológico de Urbanika
+          </TabsTrigger>
+          <TabsTrigger value="smart-homes-sales" className="data-[state=active]:bg-brand-aqua data-[state=active]:text-white">
+            Venta de Casas Inteligentes
+          </TabsTrigger>
+          <TabsTrigger value="eco-marketplace" className="data-[state=active]:bg-brand-aqua data-[state=active]:text-white">
+            Eco-Marketplace
+          </TabsTrigger>
+        </TabsList> 
 
     <TabsContent value="urbanikas-bus">
      <Card className="bg-gradient-to-r from-brand-aqua/5 to-transparent border-brand-aqua/20">
