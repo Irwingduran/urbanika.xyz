@@ -22,8 +22,8 @@ const TeamSection = () => {
     {
       name: "Dorian",
       handle: "@Solxpriestess",
-      role: "MSc Environmental Risks",
-      specialty: "Sustainability",
+      role: "MSc Environmental Eco Design",
+      specialty: "Sustainability Expert",
       img: "/member/0001member.jpg",
     },
     {
