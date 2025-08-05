@@ -32,23 +32,23 @@ const IniciativesSection = () => {
 
       </div>
       <Tabs defaultValue="urbanikas-bus" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 bg-gray-100 mb-8 sm:mb-20">
-          <TabsTrigger value="urbanikas-bus" className="data-[state=active]:bg-brand-aqua data-[state=active]:text-white">
+        <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 bg-gray-100 mb-4 sm:mb-8"> {/* Reducido el margen inferior */}
+          <TabsTrigger value="urbanikas-bus" className="data-[state=active]:bg-brand-aqua data-[state=active]:text-white py-4 px-2 text-sm sm:text-base"> {/* Añadido padding y tamaño de texto responsive */}
             Autobús Eco-Tecnológico de Urbanika
           </TabsTrigger>
-          <TabsTrigger value="smart-homes-sales" className="data-[state=active]:bg-brand-aqua data-[state=active]:text-white">
+          <TabsTrigger value="smart-homes-sales" className="data-[state=active]:bg-brand-aqua data-[state=active]:text-white py-4 px-2 text-sm sm:text-base">
             Venta de Casas Inteligentes
           </TabsTrigger>
-          <TabsTrigger value="eco-marketplace" className="data-[state=active]:bg-brand-aqua data-[state=active]:text-white">
+          <TabsTrigger value="eco-marketplace" className="data-[state=active]:bg-brand-aqua data-[state=active]:text-white py-4 px-2 text-sm sm:text-base">
             Eco-Marketplace
           </TabsTrigger>
         </TabsList> 
 
-    <TabsContent value="urbanikas-bus">
+    <TabsContent value="urbanikas-bus" className="mt-6"> {/* Añadido margen superior */}
      <Card className="bg-gradient-to-r from-brand-aqua/5 to-transparent border-brand-aqua/20">
-    <div className="grid md:grid-cols-2 gap-8 items-center p-6">
+    <div className="grid md:grid-cols-2 gap-8 items-center p-4 sm:p-6"> {/* Padding responsive */}
       <div className="space-y-4">
-        <div className="relative w-full max-w-[350px] mx-auto aspect-[2/3]"> {/* Contenedor más pequeño */}
+        <div className="relative w-full max-w-[350px] mx-auto aspect-[2/3]">
           <Link href="https://www.instagram.com/reel/DMOuEfcx13A/" target="_blank">
             <div className="relative w-full h-full overflow-hidden rounded-xl">
               <Image 
@@ -59,30 +59,30 @@ const IniciativesSection = () => {
                 className="object-cover w-full h-full"
               />
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <Play className="h-12 w-12 text-white drop-shadow-lg" /> {/* Icono más pequeño */}
+                <Play className="h-12 w-12 text-white drop-shadow-lg" />
               </div>
             </div>
           </Link>
         </div>
       </div>
       <div>
-        <h3 className="text-3xl font-bold text-brand-aqua mb-2">Urbanika es el primer hogar móvil del mundo</h3>
-        <p className="mb-6 sm:mb-1">
+        <h3 className="text-2xl sm:text-3xl font-bold text-brand-aqua mb-2">Urbanika es el primer hogar móvil del mundo</h3>
+        <p className="mb-4 sm:mb-6 text-sm sm:text-base"> {/* Tamaño de texto responsive */}
         Construido con eco-tecnologías que regeneran en lugar de contaminar: biofiltros, digestores, agricultura circular, sensores inteligentes y más.
        <br/>
         Nuestra misión es tener un alto impacto en toda Latinoamérica. Queremos visitar 20 ciudades,
         7 países y más. Frente al colapso de las ciudades, nace una alternativa.
       </p>
  
-        <div className="space-y-3 mb-6 sm:mb-3">
+        <div className="space-y-3 mb-4 sm:mb-6"> {/* Margen responsive */}
           {["Soberanía Energética", "Soberanía Hídrica", "Soberanía Alimentaria"].map((feature) => (
-            <div key={feature} className="flex items-center gap-5">
+            <div key={feature} className="flex items-center gap-3">
               <Target className="h-4 w-4 text-brand-aqua" />
               <span className="text-sm text-gray-600">{feature}</span>
             </div>
           ))}
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3"> {/* Flex col en móvil */}
           <Button onClick={() => window.open("https://www.instagram.com/reel/DMOuEfcx13A/")} className="bg-brand-aqua text-white hover:bg-teal-600">
             <Instagram className="mr-2 h-4 w-4" />
             Ver en Instagram
@@ -96,9 +96,9 @@ const IniciativesSection = () => {
     </Card> 
     </TabsContent>
 
-        <TabsContent value="smart-homes-sales">
+        <TabsContent value="smart-homes-sales" className="mt-6"> {/* Añadido margen superior */}
           <Card className="bg-gradient-to-r from-brand-yellow/5 to-transparent border-brand-yellow/20">
-            <div className="grid md:grid-cols-2 gap-8 items-center p-6">
+            <div className="grid md:grid-cols-2 gap-6 sm:gap-8 items-center p-4 sm:p-6"> {/* Padding y gap responsive */}
               <Carousel className="w-full">
                 <CarouselContent>
                   {showroomImages.map((src, i) => (
@@ -119,27 +119,29 @@ const IniciativesSection = () => {
                 <CarouselNext className="right-2" />
               </Carousel>
               <div>
-                <h3 className="text-3xl font-bold text-brand-aqua mb-4">Compra tu casa con Urbánika</h3>
-                <p className="mb-6">
-               Diseño arquitectónico personalizable, cada casa Urbanika nace de tus decisiones. En nuestro constructor digital eliges
-               módulos: [baño, cocina, sala, dormitorio, etc.] y los combinas a tu gusto en tamaños de 6, 10, 20 o 40 pies.
-              <br/>
-              También decides qué eco-tecnologías incluir y el nivel de entrega (llave en mano o autoinstalación). Cada combinación se registra como un certificado de propiedad en la blockchain de Scroll.
-               </p>
-                <div className="grid grid-cols-2 gap-4 mb-6">
+                <h3 className="text-2xl sm:text-3xl font-bold text-brand-aqua mb-3 sm:mb-4"> {/* Tamaño responsive */}
+                  Compra tu casa con Urbánika
+                </h3>
+                <p className="mb-4 sm:mb-6 text-sm sm:text-base"> {/* Tamaño responsive */}
+                  Diseño arquitectónico personalizable, cada casa Urbanika nace de tus decisiones. En nuestro constructor digital eliges
+                  módulos: [baño, cocina, sala, dormitorio, etc.] y los combinas a tu gusto en tamaños de 6, 10, 20 o 40 pies.
+                  <br/>
+                  También decides qué eco-tecnologías incluir y el nivel de entrega (llave en mano o autoinstalación). Cada combinación se registra como un certificado de propiedad en la blockchain de Scroll.
+                </p>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6"> {/* Margen y gap responsive */}
                   <div className="text-center p-3 bg-brand-aqua/10 rounded-lg">
-                    <div className="text-2xl font-bold text-brand-dark">50+</div>
-                    <div className="text-sm text-gray-600">Prototipos</div>
+                    <div className="text-xl sm:text-2xl font-bold text-brand-dark">50+</div>
+                    <div className="text-xs sm:text-sm text-gray-600">Prototipos</div>
                   </div>
                   <div className="text-center p-3 bg-brand-aquea/10 rounded-lg">
-                    <div className="text-2xl font-bold text-brand-dark">Tour 3D</div>
-                    <div className="text-sm text-gray-600">Próximamente</div>
+                    <div className="text-xl sm:text-2xl font-bold text-brand-dark">Tour 3D</div>
+                    <div className="text-xs sm:text-sm text-gray-600">Próximamente</div>
                   </div>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3"> {/* Flex col en móvil */}
                   <Button onClick={() => window.open("https://www.urbanika.xyz/investment")} className="bg-brand-yellow text-white hover:bg-yellow-400">
                     <Banknote className="mr-2 h-4 w-4 text-white" />
-                   Inversión
+                    Inversión
                   </Button>
                   <Button onClick={() => window.open("https://tally.so/r/wzbO9k")} variant="outline" className="border-brand-aqua text-brand-aqua bg-transparent">
                     <HomeIcon className="mr-2 h-4 w-4" />
@@ -151,9 +153,9 @@ const IniciativesSection = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="eco-marketplace">
+        <TabsContent value="eco-marketplace" className="mt-6"> {/* Añadido margen superior */}
           <Card className="bg-gradient-to-r from-brand-aqua/5 to-transparent border-brand-aqua/20">
-            <div className="grid md:grid-cols-2 gap-8 items-center p-6">
+            <div className="grid md:grid-cols-2 gap-6 sm:gap-8 items-center p-4 sm:p-6"> {/* Padding y gap responsive */}
               <div className="relative">
                 <Image
                   src="/placeholder.svg?width=600&height=400"
@@ -162,24 +164,26 @@ const IniciativesSection = () => {
                   alt="Eco-tech Directory"
                   className="rounded-lg shadow-2xl"
                 />
-                <div className="absolute -top-4 -right-4 bg-brand-aqua text-white px-3 py-1 rounded-full text-sm font-bold">
+                <div className="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 bg-brand-aqua text-white px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-bold">
                   Próximamente
                 </div>
               </div>
               <div>
-                <h3 className="text-3xl font-bold text-brand-aqua mb-4">Marketplace/Directiorio de Eco-Tecnologías</h3>
-                <p className="mb-6">
-                Un mercado integral para eco-tecnologías, conectando comunidades con proveedores de soluciones sostenibles verificadas a nivel mundial.
+                <h3 className="text-2xl sm:text-3xl font-bold text-brand-aqua mb-3 sm:mb-4"> {/* Tamaño responsive */}
+                  Marketplace/Directiorio de Eco-Tecnologías
+                </h3>
+                <p className="mb-4 sm:mb-6 text-sm sm:text-base"> {/* Tamaño responsive */}
+                  Un mercado integral para eco-tecnologías, conectando comunidades con proveedores de soluciones sostenibles verificadas a nivel mundial.
                 </p>
-                <div className="space-y-3 mb-6">
+                <div className="space-y-3 mb-4 sm:mb-6"> {/* Margen responsive */}
                   {["Red Global de Proveedores", "Verificación de Impacto", "Contratos Inteligentes"].map((feature) => (
                     <div key={feature} className="flex items-center gap-2">
                       <Recycle className="h-4 w-4 text-green-500" />
-                      <span className="text-sm text-gray-600">{feature}</span>
+                      <span className="text-xs sm:text-sm text-gray-600">{feature}</span>
                     </div>
                   ))}
                 </div>
-                <Button onClick={() => window.open("https://tally.so/r/3qzV4d")} className="bg-brand-aqua hover:bg-brand-aqua ">
+                <Button onClick={() => window.open("https://tally.so/r/3qzV4d")} className="bg-brand-aqua hover:bg-brand-aqua">
                   <Calendar className="mr-2 h-4 w-4" />
                   Ser Proveedor
                 </Button>
@@ -193,4 +197,4 @@ const IniciativesSection = () => {
   )
 }
 
-export default IniciativesSection
+export default IniciativesSectio
