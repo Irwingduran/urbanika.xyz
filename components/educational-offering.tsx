@@ -404,30 +404,6 @@ export default function EducationalOfferingSection() {
                                   </div>
                                 </div>
                               </div>
-                              <Button
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleModuleEnroll(index)
-                                }}
-                                className={`text-xs md:text-sm ${
-                                  isEnrolled
-                                    ? "bg-green-500 text-white hover:bg-green-600"
-                                    : "bg-brand-aqua text-white hover:bg-teal-600"
-                                }`}
-                              >
-                                {isEnrolled ? (
-                                  <>
-                                    <CheckCircle className="mr-1 h-3 w-3 md:h-4 md:w-4" />
-                                    Inscrito
-                                  </>
-                                ) : (
-                                  <>
-                                    <Play className="mr-1 h-3 w-3 md:h-4 md:w-4" />
-                                    Inscribirse
-                                  </>
-                                )}
-                              </Button>
                             </div>
 
                             {isEnrolled && module.progress > 0 && (
