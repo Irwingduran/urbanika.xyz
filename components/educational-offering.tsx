@@ -218,41 +218,48 @@ export default function EducationalOfferingSection() {
   }
 
   return (
-    <section className="py-16 md:py-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      <div className="container mx-auto px-4">
+    <section className="py-8 md:py-16 lg:py-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+      <div className="container mx-auto px-4 sm:px-6">
         {/* Header */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-brand-dark mb-4">Oferta educativa</h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+        <div className="text-center mb-8 md:mb-16">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-brand-dark mb-3 md:mb-4">
+            Oferta educativa
+          </h2>
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Transforma tu comunidad con conocimientos prácticos en regeneración ambiental, tecnología y democracia
             participativa
           </p>
         </div>
 
         {/* Learning Paths Overview */}
-        <div className="mb-16">
-          <h3 className="text-2xl font-bold text-brand-dark text-center mb-8">Rutas de Aprendizaje Recomendadas</h3>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="mb-8 md:mb-16">
+          <h3 className="text-xl sm:text-2xl font-bold text-brand-dark text-center mb-6 md:mb-8">
+            Rutas de Aprendizaje Recomendadas
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {learningPaths.map((path, index) => (
-              <Card key={index} className="bg-white shadow-lg hover:shadow-xl transition-all group cursor-pointer">
-                <CardContent className="p-6 text-center">
-                  <div className="flex justify-center mb-4">
+              <Card 
+                key={index} 
+                className="bg-white shadow-lg hover:shadow-xl transition-all group cursor-pointer h-full"
+              >
+                <CardContent className="p-4 sm:p-6 text-center">
+                  <div className="flex justify-center mb-3 md:mb-4">
                     {path.axes.map((axisId, i) => {
                       const axis = educationalAxes[axisId]
                       const IconComponent = axis.icon
                       return (
                         <div
                           key={i}
-                          className={`w-8 h-8 rounded-full flex items-center justify-center -ml-2 first:ml-0 border-2 border-white bg-gradient-to-r ${axis.color}`}
+                          className={`w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center -ml-2 first:ml-0 border-2 border-white bg-gradient-to-r ${axis.color}`}
                         >
-                          <IconComponent className="h-4 w-4 text-white" />
+                          <IconComponent className="h-3 w-3 md:h-4 md:w-4 text-white" />
                         </div>
                       )
                     })}
                   </div>
-                  <h4 className="font-bold text-brand-dark mb-2">{path.name}</h4>
-                  <p className="text-gray-600 text-sm mb-3">{path.description}</p>
-                  <div className="flex justify-between text-xs text-gray-500 mb-3">
+                  <h4 className="font-bold text-brand-dark mb-1 md:mb-2 text-sm md:text-base">{path.name}</h4>
+                  <p className="text-gray-600 text-xs md:text-sm mb-2 md:mb-3">{path.description}</p>
+                  <div className="flex justify-between text-xs text-gray-500 mb-2 md:mb-3">
                     <span>{path.duration}</span>
                     <Badge className={getLevelColor(path.level)} size="sm">
                       {path.level}
@@ -261,7 +268,7 @@ export default function EducationalOfferingSection() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="group-hover:bg-brand-aqua group-hover:text-white bg-transparent"
+                    className="group-hover:bg-brand-aqua group-hover:text-white bg-transparent text-xs md:text-sm"
                   >
                     Ver ruta completa
                   </Button>
@@ -272,31 +279,35 @@ export default function EducationalOfferingSection() {
         </div>
 
         {/* Axis Selection */}
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-12">
           {Object.values(educationalAxes).map((axis) => (
             <Card
               key={axis.id}
-              className={`cursor-pointer transition-all duration-300 hover:shadow-xl transform hover:-translate-y-2 ${
+              className={`cursor-pointer transition-all duration-300 hover:shadow-xl ${
                 activeAxis === axis.id
-                  ? `${axis.bgColor} border-2 border-brand-aqua shadow-lg scale-105`
+                  ? `${axis.bgColor} border-2 border-brand-aqua shadow-lg scale-[1.02]`
                   : "bg-white hover:bg-gray-50"
               }`}
               onClick={() => setActiveAxis(axis.id)}
             >
-              <CardHeader className="text-center pb-4">
-                <div className={`p-4 bg-gradient-to-r ${axis.color} rounded-full mb-4 mx-auto w-fit`}>
-                  <axis.icon className="h-8 w-8 text-white" />
+              <CardHeader className="text-center pb-2 md:pb-4">
+                <div className={`p-3 md:p-4 bg-gradient-to-r ${axis.color} rounded-full mb-3 md:mb-4 mx-auto w-fit`}>
+                  <axis.icon className="h-6 w-6 md:h-8 md:w-8 text-white" />
                 </div>
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="text-2xl">{axis.emoji}</span>
-                  <CardTitle className="text-xl font-bold text-brand-dark">{axis.title}</CardTitle>
+                <div className="flex items-center justify-center gap-2 mb-1 md:mb-2">
+                  <span className="text-xl md:text-2xl">{axis.emoji}</span>
+                  <CardTitle className="text-lg md:text-xl font-bold text-brand-dark">
+                    {axis.title}
+                  </CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-gray-600 text-sm leading-relaxed line-clamp-4">{axis.description}</p>
+              <CardContent className="text-center px-4 pb-4">
+                <p className="text-gray-600 text-xs md:text-sm leading-relaxed line-clamp-3 md:line-clamp-4">
+                  {axis.description}
+                </p>
                 {activeAxis === axis.id && (
-                  <div className="mt-4 flex justify-center">
-                    <CheckCircle className="h-6 w-6 text-brand-aqua" />
+                  <div className="mt-2 md:mt-4 flex justify-center">
+                    <CheckCircle className="h-5 w-5 md:h-6 md:w-6 text-brand-aqua" />
                   </div>
                 )}
               </CardContent>
@@ -305,41 +316,51 @@ export default function EducationalOfferingSection() {
         </div>
 
         {/* Detailed Axis View */}
-        <Card className={`${currentAxis.bgColor} border-2 border-brand-aqua/20 shadow-2xl mb-12`}>
+        <Card className={`${currentAxis.bgColor} border-2 border-brand-aqua/20 shadow-xl md:shadow-2xl mb-8 md:mb-12`}>
           <div className="relative">
             <div className={`h-2 bg-gradient-to-r ${currentAxis.color}`}></div>
-            <CardContent className="p-8">
-              <div className="grid lg:grid-cols-3 gap-8">
+            <CardContent className="p-4 sm:p-6 md:p-8">
+              <div className="flex flex-col lg:flex-row gap-6 md:gap-8">
                 {/* Axis Info */}
-                <div className="lg:col-span-1">
-                  <div className="flex items-center gap-3 mb-6">
-                    <span className="text-4xl">{currentAxis.emoji}</span>
+                <div className="lg:w-1/3">
+                  <div className="flex items-center gap-3 mb-4 md:mb-6">
+                    <span className="text-3xl md:text-4xl">{currentAxis.emoji}</span>
                     <div>
-                      <h3 className="text-3xl font-bold text-brand-dark mb-2">{currentAxis.title}</h3>
-                      <Badge className={`bg-gradient-to-r ${currentAxis.color} text-white`}>Eje Educativo</Badge>
+                      <h3 className="text-2xl md:text-3xl font-bold text-brand-dark mb-1 md:mb-2">
+                        {currentAxis.title}
+                      </h3>
+                      <Badge className={`bg-gradient-to-r ${currentAxis.color} text-white text-xs md:text-sm`}>
+                        Eje Educativo
+                      </Badge>
                     </div>
                   </div>
 
-                  <p className="text-gray-700 mb-6 leading-relaxed">{currentAxis.description}</p>
+                  <p className="text-gray-700 mb-4 md:mb-6 leading-relaxed text-sm md:text-base">
+                    {currentAxis.description}
+                  </p>
 
-                  <div className="mb-6">
-                    <h4 className="font-bold text-brand-dark mb-3">Habilidades que desarrollarás:</h4>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="mb-4 md:mb-6">
+                    <h4 className="font-bold text-brand-dark mb-2 md:mb-3 text-sm md:text-base">
+                      Habilidades que desarrollarás:
+                    </h4>
+                    <div className="flex flex-wrap gap-1 md:gap-2">
                       {currentAxis.skills.map((skill, index) => (
-                        <Badge key={index} variant="secondary" className="bg-white/80">
+                        <Badge key={index} variant="secondary" className="bg-white/80 text-xs md:text-sm">
                           {skill}
                         </Badge>
                       ))}
                     </div>
                   </div>
 
-                  <div className="mb-6">
-                    <h4 className="font-bold text-brand-dark mb-3">Resultados esperados:</h4>
-                    <div className="space-y-2">
+                  <div className="mb-4 md:mb-6">
+                    <h4 className="font-bold text-brand-dark mb-2 md:mb-3 text-sm md:text-base">
+                      Resultados esperados:
+                    </h4>
+                    <div className="space-y-1 md:space-y-2">
                       {currentAxis.outcomes.map((outcome, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                          <TrendingUp className="h-4 w-4 text-green-500 flex-shrink-0" />
-                          <span className="text-gray-700 text-sm">{outcome}</span>
+                        <div key={index} className="flex items-start gap-2">
+                          <TrendingUp className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                          <span className="text-gray-700 text-xs md:text-sm">{outcome}</span>
                         </div>
                       ))}
                     </div>
@@ -347,12 +368,12 @@ export default function EducationalOfferingSection() {
                 </div>
 
                 {/* Modules */}
-                <div className="lg:col-span-2">
-                  <h4 className="font-bold text-brand-dark mb-6 flex items-center gap-2">
-                    <BookOpen className="h-5 w-5 text-brand-aqua" />
+                <div className="lg:w-2/3">
+                  <h4 className="font-bold text-brand-dark mb-4 md:mb-6 flex items-center gap-2 text-sm md:text-base">
+                    <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-brand-aqua" />
                     Módulos de aprendizaje
                   </h4>
-                  <div className="grid gap-4">
+                  <div className="grid gap-3 md:gap-4">
                     {currentAxis.modules.map((module, index) => {
                       const moduleKey = `${activeAxis}-${index}`
                       const isEnrolled = enrolledModules.has(moduleKey)
@@ -364,18 +385,18 @@ export default function EducationalOfferingSection() {
                           }`}
                           onClick={() => setSelectedModule(selectedModule === index ? null : index)}
                         >
-                          <CardContent className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                              <div className="flex items-center gap-3">
+                          <CardContent className="p-4 sm:p-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 md:mb-4">
+                              <div className="flex items-center gap-2 md:gap-3">
                                 <div
-                                  className={`w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-r ${currentAxis.color} text-white font-bold`}
+                                  className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center bg-gradient-to-r ${currentAxis.color} text-white font-bold text-sm md:text-base`}
                                 >
                                   {index + 1}
                                 </div>
                                 <div>
-                                  <h5 className="font-bold text-brand-dark">{module.name}</h5>
-                                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                                    <Clock className="h-4 w-4" />
+                                  <h5 className="font-bold text-brand-dark text-sm md:text-base">{module.name}</h5>
+                                  <div className="flex items-center gap-1 md:gap-2 text-xs text-gray-600">
+                                    <Clock className="h-3 w-3 md:h-4 md:w-4" />
                                     <span>{module.duration}</span>
                                     <Badge className={getLevelColor(module.level)} size="sm">
                                       {module.level}
@@ -389,20 +410,20 @@ export default function EducationalOfferingSection() {
                                   e.stopPropagation()
                                   handleModuleEnroll(index)
                                 }}
-                                className={
+                                className={`text-xs md:text-sm ${
                                   isEnrolled
                                     ? "bg-green-500 text-white hover:bg-green-600"
                                     : "bg-brand-aqua text-white hover:bg-teal-600"
-                                }
+                                }`}
                               >
                                 {isEnrolled ? (
                                   <>
-                                    <CheckCircle className="mr-1 h-4 w-4" />
+                                    <CheckCircle className="mr-1 h-3 w-3 md:h-4 md:w-4" />
                                     Inscrito
                                   </>
                                 ) : (
                                   <>
-                                    <Play className="mr-1 h-4 w-4" />
+                                    <Play className="mr-1 h-3 w-3 md:h-4 md:w-4" />
                                     Inscribirse
                                   </>
                                 )}
@@ -410,8 +431,8 @@ export default function EducationalOfferingSection() {
                             </div>
 
                             {isEnrolled && module.progress > 0 && (
-                              <div className="mb-4">
-                                <div className="flex justify-between text-sm mb-1">
+                              <div className="mb-3 md:mb-4">
+                                <div className="flex justify-between text-xs mb-1">
                                   <span>Progreso</span>
                                   <span>{module.progress}%</span>
                                 </div>
@@ -420,13 +441,13 @@ export default function EducationalOfferingSection() {
                             )}
 
                             {selectedModule === index && (
-                              <div className="mt-4 pt-4 border-t border-gray-200">
-                                <h6 className="font-semibold text-brand-dark mb-2">Temas incluidos:</h6>
-                                <div className="grid grid-cols-2 gap-2">
+                              <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t border-gray-200">
+                                <h6 className="font-semibold text-brand-dark mb-2 text-sm">Temas incluidos:</h6>
+                                <div className="grid grid-cols-1 xs:grid-cols-2 gap-1 md:gap-2">
                                   {module.topics.map((topic, topicIndex) => (
-                                    <div key={topicIndex} className="flex items-center gap-2">
-                                      <div className="w-2 h-2 bg-brand-aqua rounded-full"></div>
-                                      <span className="text-sm text-gray-700">{topic}</span>
+                                    <div key={topicIndex} className="flex items-center gap-1 md:gap-2">
+                                      <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-brand-aqua rounded-full"></div>
+                                      <span className="text-xs md:text-sm text-gray-700">{topic}</span>
                                     </div>
                                   ))}
                                 </div>
@@ -441,22 +462,22 @@ export default function EducationalOfferingSection() {
               </div>
 
               {/* Call to Action */}
-              <div className="mt-12 text-center">
+              <div className="mt-8 md:mt-12 text-center">
                 <Card className="bg-gradient-to-r from-white/80 to-white/60 backdrop-blur-sm border-brand-aqua/30">
-                  <CardContent className="p-8">
-                    <Target className="h-12 w-12 text-brand-aqua mx-auto mb-4" />
-                    <h4 className="text-2xl font-bold text-brand-dark mb-4">
+                  <CardContent className="p-4 sm:p-6 md:p-8">
+                    <Target className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 text-brand-aqua mx-auto mb-2 sm:mb-4" />
+                    <h4 className="text-xl sm:text-2xl font-bold text-brand-dark mb-2 sm:mb-4">
                       🎯 Lleva a tu comunidad al siguiente nivel.
                     </h4>
-                    <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+                    <p className="text-gray-600 mb-4 sm:mb-6 max-w-2xl mx-auto text-sm sm:text-base">
                       Revisa la oferta educativa disponible y solicita una cotización dando clic en el botón de abajo.
                     </p>
                     <Button
                       onClick={() => setShowQuoteForm(true)}
-                      className="bg-brand-aqua text-white hover:bg-teal-600 text-lg px-8 py-4"
+                      className="bg-brand-aqua text-white hover:bg-teal-600 text-sm sm:text-base px-6 py-3 sm:px-8 sm:py-4"
                     >
                       👇 Cotizar ahora
-                      <ArrowRight className="ml-2 h-5 w-5" />
+                      <ArrowRight className="ml-1 sm:ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                   </CardContent>
                 </Card>
