@@ -197,4 +197,4 @@ const IniciativesSection = () => {
   )
 }
 
-export default IniciativesSectio
+export default IniciativesSection
