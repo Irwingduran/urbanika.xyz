@@ -127,7 +127,7 @@ const BusBooking = () => {
                 <CardContent className="p-0">
                   <div className="h-64 bg-gradient-to-br from-blue-100 to-green-100 relative overflow-hidden">
                     <Image
-                      src="/destinations/puebla.jpg"
+                      src="/mexico-city.jpg"
                       width={400}
                       height={400}
                       alt="Mapa de ubicación del autobús"
@@ -136,8 +136,8 @@ const BusBooking = () => {
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 text-center">
                         <MapPin className="h-8 w-8 text-brand-aqua mx-auto mb-2" />
-                        <p className="font-semibold text-brand-dark">Próxima parada: Puebla</p>
-                        <p className="text-sm text-gray-600">Llegada el 4 de agosto</p>
+                        <p className="font-semibold text-brand-dark">Próxima parada: Ciudad de México</p>
+                        <p className="text-sm text-gray-600">Llegada el 26 de agosto</p>
                       </div>
                     </div>
                   </div>
