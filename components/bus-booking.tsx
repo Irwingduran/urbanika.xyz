@@ -120,7 +120,7 @@ const BusBooking = () => {
                     <h3 className="font-bold">Localizador en Vivo</h3>
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm">Actualmente en Zacatlán de las Manzanas</span>
+                      <span className="text-sm">Puebla fue nuestra última ciudad...</span>
                     </div>
                   </div>
                 </div>
