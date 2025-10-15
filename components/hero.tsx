@@ -24,7 +24,7 @@ const HeroSection
       <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-brand-dark via-brand-aqua to-brand-dark">
        Evolucionando Ciudades hacia Comunidades Inteligentes, Regenerativas y Autónomas
       </h1>
-      <p className="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-gray-600">
+      <p className="mt-6 max-w-4xl mx-auto text-2xl md:text-2xl text-gray-600">
        Aprovechamos tecnología de punta e inteligencia colectiva para construir entornos urbanos prósperos que priorizan el bienestar humano y ambiental.
       </p>
 

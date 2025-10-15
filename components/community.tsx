@@ -33,7 +33,6 @@ const CommunitySection = () => {
               <Calendar className="h-12 w-12 text-brand-yellow mx-auto mb-4" />
               <h3 className="text-xl font-bold text-brand-dark mb-2">Encuentros Mensuales</h3>
               <p className="text-gray-600 mb-4">Eventos virtuales y presenciales en todo el mundo</p>
-              <Button className="bg-brand-yellow text-brand-dark hover:bg-yellow-400">Ver Eventos</Button>
             </CardContent>
           </Card> 
 
@@ -42,7 +41,6 @@ const CommunitySection = () => {
               <Lightbulb className="h-12 w-12 text-green-600 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-brand-dark mb-2">Laboratorio de Innovación</h3>
               <p className="text-gray-600 mb-4">Colabora en proyectos de vanguardia</p>
-              <Button className="bg-green-600 text-white hover:bg-green-700">Participar</Button>
             </CardContent>
           </Card>
 
@@ -51,7 +49,6 @@ const CommunitySection = () => {
               <MessageCircle className="h-12 w-12 text-brand-aqua mx-auto mb-4" />
               <h3 className="text-xl font-bold text-brand-dark mb-2">Comunidad</h3>
               <p className="text-gray-600 mb-4">Únete a nuestros miembros discutiendo innovación urbana</p>
-              <Button className="bg-brand-aqua text-white hover:bg-teal-600">Unirse</Button>
             </CardContent>
           </Card>
         </div>

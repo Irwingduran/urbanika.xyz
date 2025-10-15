@@ -329,64 +329,64 @@ export default function HomeSalesSection() {
           </div>
         </div>
 
-        {/* Simple Clean Call to Action */}
-        <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-lg">
-          <CardContent className="p-8 md:p-10">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h3 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
-                Build Your Sustainable Future
-              </h3>
-              <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                Join the modular housing revolution today
-              </p>
-            </div>
+    {/* Llamado a la Acción Simple y Limpio */}
+<Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-lg">
+  <CardContent className="p-8 md:p-10">
+    {/* Encabezado */}
+    <div className="text-center mb-8">
+      <h3 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
+        Construye Tu Futuro Sostenible
+      </h3>
+      <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        Únete hoy a la revolución de la vivienda modular
+      </p>
+    </div>
 
-            {/* Cards */}
-            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-              {/* Waitlist Card */}
-              <Card className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-brand-aqua transition-colors">
-                <CardContent className="p-6 text-center">
-                  <div className="mx-auto mb-4 bg-brand-aqua/10 p-3 rounded-full w-fit">
-                    <Users className="h-8 w-8 text-brand-aqua" />
-                  </div>
-                  <h4 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Join Waitlist</h4>
-                  <p className="text-gray-600 dark:text-gray-300 mb-4">
-                    Be first to know when we're available in your area
-                  </p>
-                  <div className="flex gap-2">
-                    <Button onClick={() => window.open("https://tally.so/r/wzbO9k")} className="w-full bg-brand-aqua hover:bg-brand-aqua/90 text-white font-medium">
-                      Join Waitlist de Urbanika
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+    {/* Tarjetas */}
+    <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+      {/* Tarjeta de Lista de Espera */}
+      <Card className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-brand-aqua transition-colors">
+        <CardContent className="p-6 text-center">
+          <div className="mx-auto mb-4 bg-brand-aqua/10 p-3 rounded-full w-fit">
+            <Users className="h-8 w-8 text-brand-aqua" />
+          </div>
+          <h4 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">50+ Familias en lista de espera</h4>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">
+            Entrega de primeras casas 2026
+          </p>
+          <div className="flex gap-2">
+            <Button onClick={() => window.open("https://tally.so/r/wzbO9k")} className="w-full bg-brand-aqua hover:bg-brand-aqua/90 text-white font-medium">
+              Unirme a la Lista de Espera de Urbanika
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-              {/* NFT Card */}
-              <Card className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-brand-yellow transition-colors">
-                <CardContent className="p-6 text-center">
-                  <div className="mx-auto mb-4 bg-brand-yellow/10 p-3 rounded-full w-fit">
-                    <Coins className="h-8 w-8 text-brand-yellow" />
-                  </div>
-                  <h4 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Invest in NFTs</h4>
-                  <p className="text-gray-600 dark:text-gray-300 mb-4">
-                    Own a piece of the future housing economy
-                  </p>
-                  <Button onClick={() => window.open("https://urbanika.xyz/investment")} className="w-full bg-brand-yellow hover:bg-brand-yellow/90 text-gray-900 font-medium">
-                    View NFT Collection
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
+      {/* Tarjeta de NFT */}
+      <Card className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-brand-yellow transition-colors">
+        <CardContent className="p-6 text-center">
+          <div className="mx-auto mb-4 bg-brand-yellow/10 p-3 rounded-full w-fit">
+            <Coins className="h-8 w-8 text-brand-yellow" />
+          </div>
+          <h4 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Invierte en NFTs</h4>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">
+            Sé dueño de una parte de la economía inmobiliaria del futuro
+          </p>
+          <Button onClick={() => window.open("https://urbanika.xyz/nft")} className="w-full bg-brand-yellow hover:bg-brand-yellow/90 text-gray-900 font-medium">
+            Ver Colección de NFT
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
 
-            {/* Footer */}
-            <div className="text-center mt-8">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                🌱 500+ families on waitlist • 🏠 First deliveries Q3 2025
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+    {/* Pie de página */}
+    <div className="text-center mt-8">
+      <p className="text-sm text-gray-500 dark:text-gray-400">
+        🌱 Más de 500 familias en lista de espera • 🏠 Primeras entregas T3 2025
+      </p>
+    </div>
+  </CardContent>
+</Card>
       </div>
     </section>
   )

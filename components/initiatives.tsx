@@ -137,7 +137,7 @@ const IniciativesSection = () => {
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <Button onClick={() => window.open("https://www.urbanika.xyz/investment  ")} className="bg-brand-yellow text-white hover:bg-yellow-400">
+                  <Button onClick={() => window.open("https://www.urbanika.xyz/nft  ")} className="bg-brand-yellow text-white hover:bg-yellow-400">
                     <Banknote className="mr-2 h-4 w-4 text-white" />
                    Inversión
                   </Button>

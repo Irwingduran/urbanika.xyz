@@ -58,7 +58,7 @@ export default function InvestmentSidebar() {
             </div>
           </div>
 
-          <Link href="/investment">
+          <Link href="/nft">
             <Button className="w-full bg-white text-brand-aqua hover:bg-gray-100 font-semibold">
               Ver detalles
               <ArrowRight className="ml-2 h-4 w-4" />

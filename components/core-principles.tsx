@@ -11,9 +11,9 @@ const CorePrinciplesSection = () => {
     const principles = [
         {
           icon: Users,
-          title: "Descentralizado",
+          title: "Participativo",
           description:
-            "Sistemas impulsados por las personas que dan a las comunidades el control sobre su futuro a través de la participación democrática.",
+            "Desarrollamos y acompañamos en la implementación de sistemas inteligentes anti-captura que facilitan la participación ciudadana y optimizan la administración de recursos. Usa la ciencia del comportamiento y la tecnología digital para optimizar a tu comunidad, organización o ciudad.",
           features: ["Votación Comunitaria", "Gobierno Local", "Redes entre Pares"],
         },
         {

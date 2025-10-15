@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Menu, X } from "lucide-react"
+import { WalletConnectButton } from "@/components/wallet-connect-button"
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -48,7 +49,11 @@ const Navbar = () => {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link href="/investment" prefetch={false}>
+          <div className="hidden md:block">
+            <WalletConnectButton />
+          </div>
+
+          <Link href="/nft" prefetch={false}>
             <Button className="hidden md:inline-flex bg-brand-yellow text-brand-dark hover:bg-yellow-400 font-semibold">
               Invertir
             </Button>
@@ -68,6 +73,9 @@ const Navbar = () => {
       {/* Mobile menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden mt-2 px-4 py-4 bg-white shadow-lg rounded-b-lg space-y-4 text-sm font-medium text-brand-dark">
+          <div className="pb-2 border-b">
+            <WalletConnectButton />
+          </div>
           <Link href="/#initiatives" className="block hover:text-brand-aqua" prefetch={false}>
             Iniciativas Clave
           </Link>
@@ -83,7 +91,7 @@ const Navbar = () => {
           <Link href="/#contact" className="block hover:text-brand-aqua" prefetch={false}>
             Contacto
           </Link>
-          <Link href="/investment" className="block text-center bg-brand-yellow text-brand-dark font-semibold py-2 rounded hover:bg-yellow-400" prefetch={false}>
+          <Link href="/nft" className="block text-center bg-brand-yellow text-brand-dark font-semibold py-2 rounded hover:bg-yellow-400" prefetch={false}>
             Invertir
           </Link>
         </div>
