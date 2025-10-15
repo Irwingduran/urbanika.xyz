@@ -34,7 +34,7 @@ const SocialMediaButtons: React.FC = () => {
     },
      {
       name: 'LinkedIn',
-      url: 'https://linkedin.com/in/yourusername',
+      url: 'https://www.linkedin.com/company/urbanika-dao',
       bgColor: 'bg-blue-600',
       hoverColor: 'hover:bg-blue-700',
       icon: (

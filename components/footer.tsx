@@ -22,6 +22,7 @@ const Footer = () => {
             </p>
             <div className="flex gap-4">
               <Button
+                onClick={() => window.open("https://x.com/0xUrbanika", "_blank")}
                 size="sm"
                 variant="outline"
                 className="border-gray-600 text-gray-300 hover:bg-gray-700 bg-transparent"
@@ -29,6 +30,15 @@ const Footer = () => {
                 Twitter
               </Button>
               <Button
+                onClick={() => window.open("https://instagram.com/0xUrbanika", "_blank")}
+                size="sm"
+                variant="outline"
+                className="border-gray-600 text-gray-300 hover:bg-gray-700 bg-transparent"
+              >
+                Instagram
+              </Button>
+              <Button
+                onClick={() => window.open("https://www.linkedin.com/company/urbanika-dao", "_blank")}
                 size="sm"
                 variant="outline"
                 className="border-gray-600 text-gray-300 hover:bg-gray-700 bg-transparent"

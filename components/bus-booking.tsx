@@ -1,5 +1,5 @@
 "use client";
-import React, {useEffect, useState} from 'react'
+import React from 'react'
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -9,42 +9,14 @@ import {
   Clock,
   MapPin,
 } from "lucide-react"
+import { Button } from './ui/button';
 const BusBooking = () => {
-     const [showFullCalendar, setShowFullCalendar] = useState<boolean>(false)
-
-  useEffect(() => {
     
-    // Inicializar el botón de programación de Google Calendar
-    const initializeCalendarButton = () => {
-      if (window.calendar && window.calendar.schedulingButton) {
-        const target = document.getElementById("calendar-button-target") as HTMLElement | null
-        if (target) {
-          window.calendar.schedulingButton.load({
-            url: "https://calendar.google.com/calendar/appointments/schedules/AcZssZ1eTqJ75GqNLJIIQ67GTbpW63vKCdE-fVHL3-LMmDUYTLVUgwsOAfxWk5qy1Fcgq7usQknX_qWi?gv=true",
-            color: "#1fa597",
-            label: "Programa tu visita al autobús",
-            target,
-          })
-        }
-      }
-    }
-
-    // Esperar a que se cargue el script
-    const checkForCalendar = setInterval(() => {
-      if (window.calendar) {
-        initializeCalendarButton()
-        clearInterval(checkForCalendar)
-      }
-    }, 100)
-
-    return () => clearInterval(checkForCalendar)
-  }, [])
-
   return (
         <section className="py-16 md:py-24 bg-gradient-to-br from-brand-yellow/10 via-white to-brand-aqua/10">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-bold text-brand-dark">Visita el Autobús Eco-Tech de Urbanika</h2>
+          <h2 className="text-4xl md:text-5xl font-bold text-brand-dark">Visita el Autobús Eco-Tech de Urbánika</h2>
           <p className="mt-2 text-lg text-gray-600">
             Reserva tu tour exclusivo del primer autobús de regeneración urbana del mundo
           </p>
@@ -64,7 +36,12 @@ const BusBooking = () => {
                     </div>
 
                   {/* Objetivo del botón de Google Calendar */}
-                  <div id="calendar-button-target" className="mb-4"></div>
+                  <div id="calendar-button-target" className="mb-4">
+                  <Button onClick={() => window.open("https://wa.me/529832011923?text=Deseo%20conocer%20el%20bus%2C%20%C2%BFd%C3%B3nde%20y%20cu%C3%A1ndo%20est%C3%A1%20disponible%3F")} 
+                  className="bg-brand-yellow text-white hover:bg-yellow-400">
+                   Agenda Visita
+                  </Button>
+                  </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 text-sm">
@@ -120,14 +97,14 @@ const BusBooking = () => {
                     <h3 className="font-bold">Localizador en Vivo</h3>
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm">Puebla fue nuestra última ciudad...</span>
+                      <span className="text-sm">CDMX fue nuestra última ciudad...</span>
                     </div>
                   </div>
                 </div>
                 <CardContent className="p-0">
                   <div className="h-64 bg-gradient-to-br from-blue-100 to-green-100 relative overflow-hidden">
                     <Image
-                      src="/mexico-city.jpg"
+                      src="/qtro.jpeg"
                       width={400}
                       height={400}
                       alt="Mapa de ubicación del autobús"
@@ -136,8 +113,8 @@ const BusBooking = () => {
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 text-center">
                         <MapPin className="h-8 w-8 text-brand-aqua mx-auto mb-2" />
-                        <p className="font-semibold text-brand-dark">Próxima parada: Ciudad de México</p>
-                        <p className="text-sm text-gray-600">Llegada el 26 de agosto</p>
+                        <p className="font-semibold text-brand-dark">Próxima parada: Querétaro</p>
+                        <p className="text-sm text-gray-600">Llegada el 26 de Septiembre</p>
                       </div>
                     </div>
                   </div>
@@ -145,7 +122,7 @@ const BusBooking = () => {
               </Card>
 
               <div className="absolute -bottom-4 -right-4 bg-brand-aqua text-white p-3 rounded-lg shadow-lg">
-                <div className="text-lg font-bold">150+</div>
+                <div className="text-lg font-bold">1,500+</div>
                 <div className="text-xs">Visitantes este mes</div>
               </div>
             </div>

@@ -28,6 +28,20 @@ const TeamSection = () => {
     },
     {
       name: "Alejandra",
+      handle: "@aleinweb3",
+      role: "Web3 Builder",
+      specialty: "Partnerships",
+      img: "/member/000000001.jpg",
+    },
+    {
+      name: "Brenda",
+      handle: "@Be_magra",
+      role: "Green MBA & Social Media",
+      specialty: "Marketing",
+      img: "/member/000001member.jpg",
+    },
+    {
+      name: "Alejandra",
       handle: "@AleVerde999",
       role: "MSc Environmental Risks",
       specialty: "Sustainability",
@@ -39,13 +53,6 @@ const TeamSection = () => {
       role: "Architect & UI/UX Designer",
       specialty: "Urban Design",
       img: "/member/001member.jpg",
-    },
-    {
-      name: "Brenda",
-      handle: "@Be_magra",
-      role: "Green MBA & Social Media",
-      specialty: "Marketing",
-      img: "/member/000001member.jpg",
     },
   ]
   return (

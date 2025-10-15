@@ -1,5 +1,5 @@
 "use client"
-import Script from "next/script"
+
 import Navbar from "@/components/navbar"
 import HeroSection from "@/components/hero"
 import CorePrinciplesSection from "@/components/core-principles"
@@ -18,10 +18,6 @@ import InvestmentSidebar from "@/components/investment-sidebar"
 export default function HomePage() {
   return (
     <div className="bg-background text-foreground w-full">
-      {/* Google Calendar Scheduling Scripts */}
-      <link href="https://calendar.google.com/calendar/scheduling-button-script.css" rel="stylesheet" />
-      <Script src="https://calendar.google.com/calendar/scheduling-button-script.js" strategy="afterInteractive" />
-
       <Navbar />
       <main className="overflow-x-hidden">
         <InvestmentSidebar/>
