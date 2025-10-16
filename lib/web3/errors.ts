@@ -68,7 +68,7 @@ export function parseWeb3Error(error: any): ParsedError {
     return {
       type: 'wrong_network',
       title: 'Red incorrecta',
-      message: 'Por favor cambia a Scroll Sepolia en tu wallet.',
+      message: 'Por favor cambia a Scroll Mainnet en tu wallet.',
       action: 'Usa el botón "Cambiar Red" arriba.',
     }
   }

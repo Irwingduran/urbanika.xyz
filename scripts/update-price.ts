@@ -55,7 +55,9 @@ async function main() {
   const usdPerUnit = MXN_PER_UNIT * MXN_TO_USD; // 100 MXN en USD
   const ethPerUnit = usdPerUnit / ETH_PRICE_USD; // Convertir USD a ETH
 
-  const newPrice = ethers.parseEther(ethPerUnit.toString());
+  // Redondear a 8 decimales para evitar errores de precisión
+  const ethPerUnitRounded = Number(ethPerUnit.toFixed(8));
+  const newPrice = ethers.parseEther(ethPerUnitRounded.toString());
 
   console.log("🔢 Cálculo del nuevo precio:");
   console.log(`- 100 MXN = $${usdPerUnit.toFixed(2)} USD`);

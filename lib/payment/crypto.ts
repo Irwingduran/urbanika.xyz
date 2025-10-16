@@ -23,12 +23,12 @@ export type CryptoPaymentResult = {
 
 /**
  * Supported cryptocurrencies
- * Los NFTs se mintean en Scroll Sepolia, así que el pago debe ser en la red Scroll
+ * Los NFTs se mintean en Scroll Mainnet
  */
 export const SUPPORTED_CRYPTOS = {
-  ETH: { symbol: "ETH", name: "Ethereum", network: "Scroll Sepolia" },
-  USDC: { symbol: "USDC", name: "USD Coin", network: "Scroll Sepolia" },
-  USDT: { symbol: "USDT", name: "Tether", network: "Scroll Sepolia" },
+  ETH: { symbol: "ETH", name: "Ethereum", network: "Scroll Mainnet" },
+  USDC: { symbol: "USDC", name: "USD Coin", network: "Scroll Mainnet" },
+  USDT: { symbol: "USDT", name: "Tether", network: "Scroll Mainnet" },
 } as const;
 
 export type SupportedCrypto = keyof typeof SUPPORTED_CRYPTOS;

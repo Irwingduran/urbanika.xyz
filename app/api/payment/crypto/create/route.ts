@@ -27,8 +27,8 @@ export async function POST(request: NextRequest) {
       metadata: data.metadata,
     })
 
-    // Conversión aproximada MXN -> USD -> Crypto (Scroll Sepolia)
-    const MXN_TO_USD = 0.055
+    // Conversión aproximada MXN -> USD -> Crypto (Scroll Mainnet)
+    const MXN_TO_USD = 0.054283
     const amountUSD = data.amountMXN * MXN_TO_USD
 
     let amountCrypto: number
@@ -40,8 +40,8 @@ export async function POST(request: NextRequest) {
         cryptoSymbol = data.cryptocurrency
         break
       case 'ETH':
-        // ETH en Scroll Sepolia (precio aproximado de ETH)
-        amountCrypto = amountUSD / 3000 // Aproximado - usar precio real en producción
+        // ETH en Scroll Mainnet (precio aproximado de ETH)
+        amountCrypto = amountUSD / 4027 // Aproximado - usar precio real en producción
         cryptoSymbol = 'ETH'
         break
       default:
@@ -49,12 +49,12 @@ export async function POST(request: NextRequest) {
         cryptoSymbol = data.cryptocurrency
     }
 
-    console.log('Pago crypto en Scroll Sepolia:', {
+    console.log('Pago crypto en Scroll Mainnet:', {
       amountMXN: data.amountMXN,
       amountUSD: amountUSD.toFixed(2),
       amountCrypto: amountCrypto.toFixed(6),
       cryptocurrency: cryptoSymbol,
-      network: 'Scroll Sepolia',
+      network: 'Scroll Mainnet',
     })
 
     // Mock data - en producción esto vendría del procesador de pagos
