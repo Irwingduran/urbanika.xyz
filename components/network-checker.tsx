@@ -1,7 +1,7 @@
 'use client'
 
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
-import { scrollSepolia, scroll } from 'wagmi/chains'
+import { scroll } from 'wagmi/chains'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, Loader2 } from 'lucide-react'
@@ -9,7 +9,7 @@ import { AlertTriangle, Loader2 } from 'lucide-react'
 /**
  * NetworkChecker Component
  *
- * Detecta si el usuario está en la red correcta y ofrece
+ * Detecta si el usuario está en Scroll Mainnet y ofrece
  * cambiar automáticamente con un click.
  *
  * Features:
@@ -23,8 +23,8 @@ export function NetworkChecker() {
   const chainId = useChainId()
   const { switchChain, isPending, isError } = useSwitchChain()
 
-  // En producción usa Scroll Mainnet, en dev usa Scroll Sepolia
-  const requiredChain = process.env.NODE_ENV === 'production' ? scroll : scrollSepolia
+  // Siempre usa Scroll Mainnet
+  const requiredChain = scroll
   const requiredChainId = requiredChain.id
   const requiredChainName = requiredChain.name
 

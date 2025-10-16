@@ -5,7 +5,6 @@ import { useWaitForTransactionReceipt, useChainId } from 'wagmi'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Loader2, CheckCircle2, XCircle, ExternalLink } from 'lucide-react'
-import { scrollSepolia, scroll } from 'wagmi/chains'
 
 /**
  * Transaction Status Tracker
@@ -73,10 +72,8 @@ export function TransactionStatus({
   // No mostrar nada si no hay hash
   if (!hash || !showStatus) return null
 
-  // Explorer URL
-  const explorerUrl = chainId === scrollSepolia.id
-    ? `https://sepolia.scrollscan.com/tx/${hash}`
-    : `https://scrollscan.com/tx/${hash}`
+  // Explorer URL (always Scroll Mainnet)
+  const explorerUrl = `https://scrollscan.com/tx/${hash}`
 
   // Pending state
   if (isPending) {
