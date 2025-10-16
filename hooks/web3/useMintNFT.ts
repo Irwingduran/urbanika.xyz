@@ -7,7 +7,7 @@ import { getContractAddress } from '@/lib/web3/config'
  * Hook para mintear NFT con pago directo en ETH
  */
 export function useMintNFT(chainId?: number) {
-  const contractAddress = getContractAddress(chainId || 534351) as `0x${string}`
+  const contractAddress = getContractAddress(chainId || 534352) as `0x${string}`
 
   // Escribir en el contrato
   const {
@@ -70,7 +70,7 @@ export function useMintNFT(chainId?: number) {
  * Hook para calcular el precio de un NFT
  */
 export function useCalculatePrice(investmentAmount: number, chainId?: number) {
-  const contractAddress = getContractAddress(chainId || 534351) as `0x${string}`
+  const contractAddress = getContractAddress(chainId || 534352) as `0x${string}`
 
   // Validar que investmentAmount sea un número válido
   const isValidAmount = investmentAmount && !isNaN(investmentAmount) && investmentAmount > 0
@@ -91,7 +91,7 @@ export function useCalculatePrice(investmentAmount: number, chainId?: number) {
  * Hook para obtener el precio por unidad
  */
 export function usePricePerUnit(chainId?: number) {
-  const contractAddress = getContractAddress(chainId || 534351) as `0x${string}`
+  const contractAddress = getContractAddress(chainId || 534352) as `0x${string}`
 
   return useReadContract({
     address: contractAddress,

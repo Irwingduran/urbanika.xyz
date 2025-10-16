@@ -7,7 +7,7 @@ import { getContractAddress } from '@/lib/web3/config'
  */
 
 export function useUrbanikaNFT(chainId?: number) {
-  const contractAddress = getContractAddress(chainId || 534351) as `0x${string}`
+  const contractAddress = getContractAddress(chainId || 534352) as `0x${string}`
 
   return {
     contractAddress,
