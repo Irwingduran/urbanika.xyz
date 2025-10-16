@@ -54,7 +54,7 @@ export function trackEvent(event: AnalyticsEvent, properties?: EventProperties) 
  */
 export function trackWalletConnected(address: string, chainId: number) {
   trackEvent('wallet_connected', {
-    address: `${address.slice(0, 6)}...${address.slice(-4)}`,
+    address: address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'unknown',
     chainId,
   })
 }
@@ -122,7 +122,7 @@ export function trackNFTMintSuccess(
 ) {
   trackEvent('nft_mint_success', {
     investmentAmount,
-    transactionHash: `${transactionHash.slice(0, 10)}...`,
+    transactionHash: transactionHash ? `${transactionHash.slice(0, 10)}...` : 'unknown',
     chainId,
   })
 }
@@ -134,8 +134,8 @@ export function trackNFTMintFailed(
 ) {
   trackEvent('nft_mint_failed', {
     investmentAmount,
-    errorType,
-    errorMessage: errorMessage?.slice(0, 100), // Limitar tamaño
+    errorType: errorType || 'unknown',
+    errorMessage: errorMessage ? errorMessage.slice(0, 100) : undefined, // Limitar tamaño
   })
 }
 
@@ -147,7 +147,7 @@ export function trackTransactionConfirmed(
   confirmations: number
 ) {
   trackEvent('transaction_confirmed', {
-    transactionHash: `${transactionHash.slice(0, 10)}...`,
+    transactionHash: transactionHash ? `${transactionHash.slice(0, 10)}...` : 'unknown',
     confirmations,
   })
 }
