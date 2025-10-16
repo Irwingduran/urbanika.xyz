@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { getTierName } from '@/lib/web3/abi'
 import { formatEther } from 'viem'
-import { WalletConnectButton } from './wallet-connect-button'
 
 /**
  * Componente que muestra las inversiones NFT de un usuario
@@ -98,8 +97,7 @@ export function MyInvestments() {
     return (
       <Card className="bg-white shadow-lg">
         <CardContent className="p-8 text-center">
-          <p className="text-gray-600 mb-4">Conecta tu wallet para ver tus inversiones</p>
-          <WalletConnectButton />
+          <p className="text-gray-600">Conecta tu wallet para ver tus inversiones</p>
         </CardContent>
       </Card>
     )
