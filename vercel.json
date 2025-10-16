@@ -1,0 +1,9 @@
+{
+  "buildCommand": "npm run build",
+  "framework": "nextjs",
+  "installCommand": "npm install",
+  "env": {
+    "NEXT_PUBLIC_CONTRACT_ADDRESS_SEPOLIA": "@next_public_contract_address_sepolia",
+    "NEXT_PUBLIC_NFT_BASE_IMAGE_IPFS": "@next_public_nft_base_image_ipfs"
+  }
+}
