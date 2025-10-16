@@ -4,7 +4,14 @@ require("dotenv/config");
 // Register ts-node with correct config
 require("ts-node").register({
   transpileOnly: true,
-  project: "./tsconfig-hardhat.json",
+  compilerOptions: {
+    module: "commonjs",
+    target: "ES2020",
+    esModuleInterop: true,
+    resolveJsonModule: true,
+    moduleResolution: "node",
+    skipLibCheck: true
+  }
 });
 
 /**
