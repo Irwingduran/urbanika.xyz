@@ -198,6 +198,13 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
       return
     }
 
+    // Verificar que tengamos el precio calculado del contrato
+    if (!priceData) {
+      setError("Error calculando el precio. Por favor intenta de nuevo.")
+      setStep("error")
+      return
+    }
+
     trackNFTMintInitiated(investmentAmount, 'crypto')
     setProcessing(true)
     setStep("processing")
@@ -229,10 +236,11 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
 
       console.log('✅ NFT subido a IPFS:', ipfsData.tokenURI)
 
-      // 3. Mintear NFT con tokenURI de IPFS
+      // 3. Mintear NFT con tokenURI de IPFS y precio del contrato
       await mintNFT({
         investmentAmount,
         tokenURI: ipfsData.tokenURI,
+        priceInWei: priceData, // Usar precio calculado por el contrato
       })
 
       // El éxito se maneja en el useEffect
