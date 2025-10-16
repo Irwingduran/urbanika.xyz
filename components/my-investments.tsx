@@ -136,7 +136,7 @@ export function MyInvestments() {
       </h2>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {tokenIds.map((tokenId) => (
-          <InvestmentCard key={tokenId.toString()} tokenId={Number(tokenId)} />
+          <InvestmentCard key={tokenId?.toString() || String(tokenId)} tokenId={Number(tokenId)} />
         ))}
       </div>
     </div>

@@ -36,25 +36,29 @@ export function ContractStats() {
   const statsData = [
     {
       label: 'Total Inversores',
-      value: stats.totalSupply.toString(),
+      value: stats.totalSupply?.toString() || '0',
       icon: Users,
       color: 'text-brand-aqua',
     },
     {
       label: 'NFTs Activos',
-      value: stats.activeNFTCount.toString(),
+      value: stats.activeNFTCount?.toString() || '0',
       icon: Home,
       color: 'text-brand-yellow',
     },
     {
       label: 'Total Invertido',
-      value: `${parseFloat(formatEther(stats.totalInvestmentAmount)).toLocaleString()} MXN`,
+      value: stats.totalInvestmentAmount
+        ? `${parseFloat(formatEther(stats.totalInvestmentAmount)).toLocaleString()} MXN`
+        : '0 MXN',
       icon: Coins,
       color: 'text-green-600',
     },
     {
       label: 'Total Distribuido',
-      value: `${parseFloat(formatEther(stats.totalDistributed)).toLocaleString()} MXN`,
+      value: stats.totalDistributed
+        ? `${parseFloat(formatEther(stats.totalDistributed)).toLocaleString()} MXN`
+        : '0 MXN',
       icon: TrendingUp,
       color: 'text-blue-600',
     },
