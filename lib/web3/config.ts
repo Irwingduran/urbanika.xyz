@@ -1,13 +1,12 @@
 import { http, createConfig, fallback, createStorage } from 'wagmi'
-import { scrollSepolia, scroll } from 'wagmi/chains'
+import { scroll } from 'wagmi/chains'
 import { injected, walletConnect } from 'wagmi/connectors'
 
 /**
- * Configuración de Wagmi para Urbanika - Production Ready
+ * Configuración de Wagmi para Urbanika - Production
  *
- * Chains configuradas:
- * - Scroll Sepolia (testnet)
- * - Scroll Mainnet
+ * Chain configurada:
+ * - Scroll Mainnet (Chain ID: 534352)
  *
  * Features:
  * - Multiple RPC endpoints con fallback automático
@@ -29,7 +28,7 @@ const metadata = {
 }
 
 export const config = createConfig({
-  chains: [scrollSepolia, scroll],
+  chains: [scroll],
   connectors: [
     injected(), // MetaMask, Coinbase Wallet, etc.
     ...(projectId
@@ -43,12 +42,6 @@ export const config = createConfig({
       : []),
   ],
   transports: {
-    // Scroll Sepolia con múltiples RPCs (fallback automático)
-    [scrollSepolia.id]: fallback([
-      http('https://sepolia-rpc.scroll.io'),
-      http('https://scroll-sepolia.blockpi.network/v1/rpc/public'),
-      http('https://scroll-testnet-public.unifra.io'),
-    ]),
     // Scroll Mainnet con múltiples RPCs (fallback automático)
     [scroll.id]: fallback([
       http('https://rpc.scroll.io'),
@@ -64,18 +57,13 @@ export const config = createConfig({
   }),
 })
 
-// Chain actual (según environment)
-export const defaultChain = process.env.NODE_ENV === 'production'
-  ? scroll
-  : scrollSepolia
+// Chain por defecto: Scroll Mainnet
+export const defaultChain = scroll
 
-// Contract addresses por chain
-export const CONTRACT_ADDRESSES = {
-  [scrollSepolia.id]: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS_SEPOLIA || '0x591D218a9Ac4843FB6f571273166B5d5df99E6c0',
-  [scroll.id]: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET || '',
-} as const
+// Contract address en Scroll Mainnet
+export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET || '0x263E2E6C8d7a338deBac013143916d9709C18441'
 
-// Helper para obtener contract address de la chain actual
-export function getContractAddress(chainId: number): string {
-  return CONTRACT_ADDRESSES[chainId as keyof typeof CONTRACT_ADDRESSES] || ''
+// Helper para obtener contract address (siempre retorna mainnet)
+export function getContractAddress(chainId?: number): string {
+  return CONTRACT_ADDRESS
 }

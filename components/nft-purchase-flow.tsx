@@ -95,7 +95,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
   // Handle successful mint
   useEffect(() => {
     if (isSuccess && hash) {
-      trackNFTMintSuccess(investmentAmount, hash, chain?.id || 534351)
+      trackNFTMintSuccess(investmentAmount, hash, chain?.id || 534352)
       setTxHash(hash)
       setStep("success")
       setProcessing(false)
@@ -191,9 +191,9 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
       return
     }
 
-    // Verificar que esté en la red correcta (Scroll Sepolia)
-    if (chain?.id !== 534351) {
-      setError("Por favor cambia a la red Scroll Sepolia en tu wallet")
+    // Verificar que esté en la red correcta (Scroll Mainnet)
+    if (chain?.id !== 534352) {
+      setError("Por favor cambia a la red Scroll Mainnet en tu wallet")
       setStep("error")
       return
     }
@@ -455,17 +455,15 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
                     </div>
                     <div className="flex-1">
                       <h4 className="font-bold text-lg mb-1">Criptomonedas</h4>
-                      <p className="text-sm text-gray-600 mb-2">Paga con ETH, USDC o USDT en Scroll Sepolia</p>
+                      <p className="text-sm text-gray-600 mb-2">Paga con ETH en Scroll Mainnet</p>
                       <div className="flex gap-2 text-xs text-gray-500">
-                        {Object.keys(SUPPORTED_CRYPTOS).map((crypto) => (
-                          <span key={crypto}>✓ {crypto}</span>
-                        ))}
+                        <span>✓ ETH</span>
                       </div>
                       <div className="mt-2 text-sm font-semibold text-brand-dark">
                         ≈ ${amountUSD.toFixed(2)} USD en crypto
                       </div>
                       <div className="mt-1 text-xs text-gray-500">
-                        Red: Scroll Sepolia Testnet
+                        Red: Scroll Mainnet
                       </div>
                     </div>
                     {paymentMethod === "crypto" && <CheckCircle className="h-6 w-6 text-brand-yellow" />}
@@ -527,7 +525,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
           <div className="space-y-6">
             <div className="text-center">
               <h3 className="text-2xl font-bold text-brand-dark mb-2">Pago con criptomonedas</h3>
-              <p className="text-gray-600">Conecta tu wallet y paga en Scroll Sepolia</p>
+              <p className="text-gray-600">Conecta tu wallet y paga en Scroll Mainnet</p>
             </div>
 
             {/* Network checker */}
@@ -575,13 +573,13 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
             )}
 
             {/* Network check */}
-            {isConnected && chain?.id !== 534351 && (
+            {isConnected && chain?.id !== 534352 && (
               <Card className="bg-red-50 border-red-200">
                 <CardContent className="p-4 flex gap-3">
                   <XCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-red-900">
                     <p className="font-semibold mb-1">Red incorrecta</p>
-                    <p>Por favor cambia a <strong>Scroll Sepolia</strong> en tu wallet para continuar.</p>
+                    <p>Por favor cambia a <strong>Scroll Mainnet</strong> en tu wallet para continuar.</p>
                     <p className="text-xs mt-1">Red actual: {chain?.name}</p>
                   </div>
                 </CardContent>
@@ -595,7 +593,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
                   <p className="font-semibold mb-1">Información de pago:</p>
                   <p>• Inversión: <strong>${investmentAmount.toLocaleString()} MXN</strong></p>
                   <p>• Precio estimado: <strong>{priceData ? formatEther(priceData) : "Calculando..."} ETH</strong></p>
-                  <p>• Red: <strong>Scroll Sepolia Testnet</strong></p>
+                  <p>• Red: <strong>Scroll Mainnet</strong></p>
                   <p className="text-xs mt-2">Tu NFT será minteado instantáneamente después del pago.</p>
                 </div>
               </CardContent>
@@ -608,7 +606,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
               </Button>
               <Button
                 onClick={handleCryptoPayment}
-                disabled={!isConnected || chain?.id !== 534351 || processing || isPending || isConfirming}
+                disabled={!isConnected || chain?.id !== 534352 || processing || isPending || isConfirming}
                 className="flex-1 bg-brand-yellow hover:bg-brand-yellow/90 text-brand-dark font-semibold"
               >
                 {isPending || isConfirming ? (
@@ -655,7 +653,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
                       {(txHash || hash)?.slice(0, 10)}...{(txHash || hash)?.slice(-8)}
                     </code>
                     <a
-                      href={`https://sepolia.scrollscan.com/tx/${txHash || hash}`}
+                      href={`https://scrollscan.com/tx/${txHash || hash}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs text-brand-aqua hover:underline"
