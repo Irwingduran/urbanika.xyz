@@ -555,7 +555,9 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
                     <div>
                       <p className="font-semibold text-green-900">Wallet conectada</p>
                       <p className="text-sm text-green-700">{address?.slice(0, 6)}...{address?.slice(-4)}</p>
-                      <p className="text-xs text-green-600 mt-1">Red: {chain?.name || "Unknown"}</p>
+                      <p className="text-xs text-green-600 mt-1">
+                        Red: {chain?.name || `Chain ID ${chain?.id || 'desconocido'}`}
+                      </p>
                     </div>
                   </div>
                 </CardContent>

@@ -35,19 +35,17 @@ export function WalletConnectButton() {
     )
   }
 
+  // Usar el primer conector disponible (generalmente injected/MetaMask)
+  const defaultConnector = connectors[0]
+
   return (
-    <div className="flex gap-2">
-      {connectors.map((connector) => (
-        <Button
-          key={connector.id}
-          onClick={() => connect({ connector })}
-          disabled={isPending}
-          className="gap-2 bg-brand-aqua hover:bg-brand-aqua/90"
-        >
-          <Wallet className="h-4 w-4" />
-          {isPending ? 'Conectando...' : 'Conectar Wallet'}
-        </Button>
-      ))}
-    </div>
+    <Button
+      onClick={() => connect({ connector: defaultConnector })}
+      disabled={isPending || !defaultConnector}
+      className="gap-2 bg-brand-aqua hover:bg-brand-aqua/90"
+    >
+      <Wallet className="h-4 w-4" />
+      {isPending ? 'Conectando...' : 'Conectar Wallet'}
+    </Button>
   )
 }

@@ -22,8 +22,8 @@ import {
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import NFTPurchaseFlow from "@/components/nft-purchase-flow"
-import { ContractStats } from "@/components/contract-stats"
 import { MyInvestments } from "@/components/my-investments"
+import { WalletConnectButton } from "@/components/wallet-connect-button"
 
 export default function NFTInvestmentPage() {
   const [showPurchaseFlow, setShowPurchaseFlow] = useState(false)
@@ -83,8 +83,13 @@ export default function NFTInvestmentPage() {
     <div className="min-h-screen bg-gradient-to-br from-brand-aqua/5 via-white to-brand-yellow/5">
       <Navbar />
       <main className="container mx-auto px-4 py-8">
+        {/* Wallet Connect Section */}
+        <div className="flex justify-end mb-4 mt-20">
+          <WalletConnectButton />
+        </div>
+
         {/* Hero Section */}
-        <div className="text-center mb-16 mt-20">
+        <div className="text-center mb-16">
           <div className="flex items-center justify-center gap-3 mb-6">
             <Sparkles className="h-8 w-8 text-brand-yellow animate-pulse" />
           </div>
@@ -206,11 +211,6 @@ export default function NFTInvestmentPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Investment Stats - Connected to Smart Contract */}
-        <div className="mb-16">
-          <ContractStats />
         </div>
 
         {/* My Investments Section */}
