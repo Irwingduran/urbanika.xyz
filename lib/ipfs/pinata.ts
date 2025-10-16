@@ -47,9 +47,9 @@ export async function uploadFileToIPFS(file: File): Promise<{
     }
 
     // Subir archivo a Pinata
-    const upload = await pinata.upload.file(file)
+    const upload = await pinata.upload.public.file(file)
 
-    const ipfsHash = upload.IpfsHash
+    const ipfsHash = upload.cid
     const ipfsUrl = `ipfs://${ipfsHash}`
     const gatewayUrl = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`
 
@@ -101,9 +101,9 @@ export async function uploadMetadataToIPFS(
     })
 
     // Subir a Pinata
-    const upload = await pinata.upload.file(file)
+    const upload = await pinata.upload.public.file(file)
 
-    const ipfsHash = upload.IpfsHash
+    const ipfsHash = upload.cid
     const ipfsUrl = `ipfs://${ipfsHash}`
     const gatewayUrl = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`
 
@@ -273,7 +273,7 @@ export async function createNFTOnIPFS(params: {
     return {
       success: true,
       tokenURI: metadataUpload.ipfsUrl, // Este es el que se pasa al smart contract
-      imageIpfsUrl: imageUpload.ipfsUrl,
+      imageIpfsUrl,
       metadataIpfsUrl: metadataUpload.ipfsUrl,
       gatewayUrl: metadataUpload.gatewayUrl,
     }
