@@ -24,23 +24,21 @@ export function useMintNFT(chainId?: number) {
 
   /**
    * Mintea un NFT pagando en ETH
+   * @param investmentAmount - Monto de inversión en MXN
+   * @param tokenURI - URI del metadata en IPFS
+   * @param priceInWei - Precio calculado desde el contrato (en wei)
    */
   const mintNFT = async ({
     investmentAmount,
     tokenURI,
+    priceInWei,
   }: {
     investmentAmount: number // en MXN
     tokenURI: string
+    priceInWei: bigint // Precio desde calculatePrice del contrato
   }) => {
     // Convertir MXN a wei
     const investmentAmountWei = parseEther(investmentAmount.toString())
-
-    // Calcular precio requerido (llamando a calculatePrice del contrato)
-    // Por ahora usamos cálculo local: $10 USD por cada 100 MXN
-    // 1 USD ≈ 0.00033 ETH
-    const pricePerUnit = 0.0033 / 100 // ETH por MXN
-    const priceInETH = investmentAmount * pricePerUnit
-    const value = parseEther(priceInETH.toString())
 
     try {
       await writeContract({
@@ -48,7 +46,7 @@ export function useMintNFT(chainId?: number) {
         abi: URBANIKA_NFT_ABI,
         functionName: 'publicMint',
         args: [investmentAmountWei, tokenURI],
-        value, // Pago en ETH
+        value: priceInWei, // Usar precio del contrato
       })
     } catch (err) {
       console.error('Error minteando NFT:', err)
