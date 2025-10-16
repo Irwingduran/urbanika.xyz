@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 import SocialMediaButtons from '@/components/social-media-buttons'
 import { Web3Provider } from '@/lib/web3/providers'
-// import { Analytics } from '@vercel/analytics/react'
-// import { SpeedInsights } from '@vercel/speed-insights/next'
+import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 export const metadata: Metadata = {
   title: 'Urbánika - Invierte en Casas Regenerativas con NFTs',
@@ -74,8 +74,8 @@ export default function RootLayout({
           {children}
           <SocialMediaButtons />
         </Web3Provider>
-        {/* <Analytics /> */}
-        {/* <SpeedInsights /> */}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )
