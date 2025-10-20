@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title UrbanikaNFT - Production Ready Version
@@ -33,6 +35,8 @@ contract UrbanikaNFT is
     Pausable,
     ReentrancyGuard
 {
+    using SafeERC20 for IERC20;
+
     // ============ State Variables ============
 
     uint256 private _tokenIdCounter;
@@ -80,6 +84,15 @@ contract UrbanikaNFT is
 
     // Precio de mint público (en wei de ETH)
     uint256 public pricePerUnit = 0.0033 ether / 100; // ~$10 USD por 100 MXN
+
+    // Tokens ERC20 aceptados (Scroll Mainnet)
+    address public constant USDC = 0x06eFdBFf2a14a7c8E15944D1F4A48F9F95F663A4;
+    address public constant USDT = 0xf55BEC9cafDbE8730f096Aa55dad6D22d44099Df;
+
+    // Precio por token (para 100 MXN)
+    // USDC y USDT tienen 6 decimales en Scroll
+    mapping(address => uint256) public tokenPricePerUnit;
+    mapping(address => bool) public acceptedTokens;
 
     // Treasury con timelock
     address payable public treasury;
@@ -135,6 +148,17 @@ contract UrbanikaNFT is
 
     event MintPauseToggled(bool isPaused);
 
+    event TokenPriceUpdated(
+        address indexed token,
+        uint256 oldPrice,
+        uint256 newPrice
+    );
+
+    event TokenAcceptanceToggled(
+        address indexed token,
+        bool isAccepted
+    );
+
     // ============ Modifiers ============
 
     modifier whenMintNotPaused() {
@@ -152,6 +176,15 @@ contract UrbanikaNFT is
         treasury = _treasury;
         _tokenIdCounter = 0;
         activeNFTCount = 0;
+
+        // Configurar tokens aceptados
+        acceptedTokens[USDC] = true;
+        acceptedTokens[USDT] = true;
+
+        // Precio inicial: $10 USD por 100 MXN
+        // USDC y USDT tienen 6 decimales en Scroll
+        tokenPricePerUnit[USDC] = 10 * 1e6;  // 10 USDC
+        tokenPricePerUnit[USDT] = 10 * 1e6;  // 10 USDT
     }
 
     // ============ Public Functions ============
@@ -467,6 +500,71 @@ contract UrbanikaNFT is
     }
 
     /**
+     * @dev Mintea NFT con pago en USDC o USDT
+     * @param investmentAmount Monto de inversión deseado (en wei MXN)
+     * @param tokenURI URI del metadata en IPFS
+     * @param paymentToken Dirección del token ERC20 (USDC o USDT)
+     * @return tokenId ID del NFT creado
+     */
+    function publicMintWithToken(
+        uint256 investmentAmount,
+        string memory tokenURI,
+        address paymentToken
+    ) public whenNotPaused whenMintNotPaused nonReentrant returns (uint256) {
+        require(acceptedTokens[paymentToken], "Token not accepted");
+        require(_tokenIdCounter < MAX_SUPPLY, "Max supply reached");
+        require(investmentAmount >= MIN_BRONZE, "Amount below minimum");
+        require(bytes(tokenURI).length > 0, "Invalid token URI");
+
+        // Verificar URI único
+        bytes32 uriHash = keccak256(bytes(tokenURI));
+        require(!_usedURIs[uriHash], "URI already used");
+        _usedURIs[uriHash] = true;
+
+        // Calcular precio requerido en el token
+        uint256 requiredPayment = calculatePriceInToken(investmentAmount, paymentToken);
+
+        // Transferir tokens del comprador al treasury
+        IERC20(paymentToken).safeTransferFrom(msg.sender, treasury, requiredPayment);
+
+        _tokenIdCounter++;
+        uint256 tokenId = _tokenIdCounter;
+
+        // Calcular tier
+        InvestmentTier tier = _calculateTier(investmentAmount);
+
+        // Calcular retorno esperado (1.5x)
+        uint256 expectedReturn = (investmentAmount * RETURN_MULTIPLIER) / MULTIPLIER_BASE;
+
+        // Crear investment (sin email en public mint)
+        investments[tokenId] = Investment({
+            investmentAmount: investmentAmount,
+            expectedReturn: expectedReturn,
+            currentReturn: 0,
+            mintDate: block.timestamp,
+            tier: tier,
+            isActive: true,
+            investor: msg.sender,
+            emailHash: bytes32(0) // Sin email hash en public mint
+        });
+
+        // Actualizar stats
+        totalInvestmentAmount += investmentAmount;
+        activeNFTCount++;
+
+        // Guardar relación inversor-token
+        _investorTokens[msg.sender].push(tokenId);
+
+        // Mint NFT
+        _safeMint(msg.sender, tokenId);
+        _setTokenURI(tokenId, tokenURI);
+
+        emit NFTMinted(tokenId, msg.sender, investmentAmount, tier, expectedReturn);
+
+        return tokenId;
+    }
+
+    /**
      * @dev Calcula el precio en ETH para un monto de inversión
      * @param investmentAmount Monto de inversión en wei MXN
      * @return price Precio en wei ETH
@@ -479,7 +577,24 @@ contract UrbanikaNFT is
     }
 
     /**
-     * @dev Actualiza el precio por unidad (solo owner)
+     * @dev Calcula el precio en un token ERC20 específico
+     * @param investmentAmount Monto de inversión en wei MXN
+     * @param tokenAddress Dirección del token (USDC o USDT)
+     * @return price Precio en unidades del token
+     */
+    function calculatePriceInToken(
+        uint256 investmentAmount,
+        address tokenAddress
+    ) public view returns (uint256) {
+        require(acceptedTokens[tokenAddress], "Token not accepted");
+        // investmentAmount está en wei (1 MXN = 1e18)
+        // Convertir a unidades de 100 MXN
+        uint256 units = investmentAmount / (100 * 1e18);
+        return units * tokenPricePerUnit[tokenAddress];
+    }
+
+    /**
+     * @dev Actualiza el precio por unidad en ETH (solo owner)
      * @param newPrice Nuevo precio en wei ETH por 100 MXN
      */
     function setPricePerUnit(uint256 newPrice) public onlyOwner {
@@ -487,6 +602,30 @@ contract UrbanikaNFT is
         uint256 oldPrice = pricePerUnit;
         pricePerUnit = newPrice;
         emit PricePerUnitUpdated(oldPrice, newPrice);
+    }
+
+    /**
+     * @dev Actualiza el precio de un token ERC20 (solo owner)
+     * @param tokenAddress Dirección del token
+     * @param newPrice Nuevo precio por 100 MXN
+     */
+    function setTokenPrice(address tokenAddress, uint256 newPrice) public onlyOwner {
+        require(acceptedTokens[tokenAddress], "Token not accepted");
+        require(newPrice > 0, "Price must be greater than 0");
+        uint256 oldPrice = tokenPricePerUnit[tokenAddress];
+        tokenPricePerUnit[tokenAddress] = newPrice;
+        emit TokenPriceUpdated(tokenAddress, oldPrice, newPrice);
+    }
+
+    /**
+     * @dev Activa/desactiva un token como método de pago (solo owner)
+     * @param tokenAddress Dirección del token
+     * @param isAccepted True para aceptar, false para rechazar
+     */
+    function setTokenAcceptance(address tokenAddress, bool isAccepted) public onlyOwner {
+        require(tokenAddress != address(0), "Invalid token address");
+        acceptedTokens[tokenAddress] = isAccepted;
+        emit TokenAcceptanceToggled(tokenAddress, isAccepted);
     }
 
     /**

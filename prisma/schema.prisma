@@ -1,0 +1,61 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Lead/Contact model for NFT purchase inquiries
+model Lead {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Contact Information
+  email     String
+  name      String?
+  phone     String?
+
+  // Investment Details
+  investmentAmount Int?      // Amount in MXN
+  paymentMethod    String?   // "crypto" | "stripe" | "pending"
+  cryptocurrency   String?   // "ETH" | "USDC" | "USDT"
+
+  // Status tracking
+  status           LeadStatus @default(PENDING)
+  nftMinted        Boolean    @default(false)
+  mintTxHash       String?    // Transaction hash if NFT was minted
+  tokenId          String?    // NFT Token ID if minted
+
+  // Metadata
+  source           String?    // Where did the lead come from
+  notes            String?    // Admin notes
+  metadata         Json?      // Additional flexible data
+
+  // Email tracking
+  emailSent        Boolean    @default(false)
+  emailSentAt      DateTime?
+  lastEmailType    String?    // "welcome" | "nft_ready" | "reminder"
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum LeadStatus {
+  PENDING         // Initial contact submitted
+  CONTACTED       // Follow-up sent
+  PAYMENT_PENDING // Waiting for payment
+  PAYMENT_RECEIVED // Payment confirmed
+  NFT_MINTING     // NFT being minted
+  NFT_DELIVERED   // NFT successfully delivered
+  CANCELLED       // User cancelled or timed out
+}

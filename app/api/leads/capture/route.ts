@@ -1,44 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
 
     // Validar datos requeridos
-    if (!data.email || !data.status) {
+    if (!data.email) {
       return NextResponse.json(
-        { error: 'Email y status son requeridos' },
+        { error: 'Email es requerido' },
         { status: 400 }
       )
     }
 
-    // Generar un ID único para el lead
-    const leadId = `lead_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    // Extraer WhatsApp de metadata si existe
+    const whatsapp = data.metadata?.whatsapp || data.phone || null
 
-    // TODO: Aquí guardarías en tu base de datos
-    // Por ahora solo validamos y retornamos el leadId
-    // Ejemplos de integraciones:
-    // - MongoDB: await db.collection('leads').insertOne({ ...data, leadId })
-    // - PostgreSQL: await prisma.lead.create({ data: { ...data, leadId } })
-    // - Supabase: await supabase.from('leads').insert({ ...data, leadId })
-
-    console.log('Lead captured:', {
-      leadId,
-      email: data.email,
-      name: data.name,
-      investmentAmount: data.investmentAmount,
-      status: data.status,
-      timestamp: data.timestamp,
+    // Guardar lead en la base de datos
+    const lead = await prisma.lead.create({
+      data: {
+        email: data.email,
+        name: data.name || null,
+        phone: whatsapp,
+        investmentAmount: data.investmentAmount ? parseInt(data.investmentAmount) : null,
+        paymentMethod: data.paymentMethod || null,
+        cryptocurrency: data.cryptocurrency || null,
+        status: 'PENDING',
+        source: data.source || 'nft_purchase_form',
+        metadata: data.metadata || {},
+      },
     })
 
-    // Retornar éxito con el leadId
+    console.log('✅ Lead guardado en base de datos:', {
+      id: lead.id,
+      email: lead.email,
+      name: lead.name,
+      phone: lead.phone,
+      investmentAmount: lead.investmentAmount,
+      status: lead.status,
+      createdAt: lead.createdAt,
+    })
+
     return NextResponse.json({
       success: true,
-      leadId,
-      message: 'Lead capturado exitosamente',
+      leadId: lead.id,
+      message: 'Lead guardado exitosamente',
     })
   } catch (error) {
-    console.error('Error capturando lead:', error)
+    console.error('❌ Error capturando lead:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

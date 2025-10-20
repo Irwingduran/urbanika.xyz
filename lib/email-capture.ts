@@ -23,7 +23,7 @@ export type EmailCaptureResult = {
  */
 export async function captureEmail(data: LeadData): Promise<EmailCaptureResult> {
   try {
-    // Option 1: Save to your database via API
+    // Save to database via API
     const response = await fetch("/api/leads/capture", {
       method: "POST",
       headers: {
@@ -38,7 +38,30 @@ export async function captureEmail(data: LeadData): Promise<EmailCaptureResult> 
       throw new Error(result.error || "Failed to capture email");
     }
 
-    // Option 2: Also send to email marketing service (Mailchimp, SendGrid, etc.)
+    const leadId = result.leadId;
+
+    // Send welcome email automatically (DESACTIVADO TEMPORALMENTE)
+    // TODO: Reactivar cuando se verifique el dominio en Resend
+    /*
+    try {
+      await fetch("/api/leads/notify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          leadId,
+          type: "welcome",
+        }),
+      });
+    } catch (emailError) {
+      console.error("Failed to send welcome email:", emailError);
+      // Don't fail the whole operation if email fails
+    }
+    */
+    // console.log('📧 Email notifications disabled (testing mode)')
+
+    // Also send to email marketing service (Mailchimp, SendGrid, etc.)
     await addToEmailList({
       email: data.email,
       name: data.name,
@@ -47,7 +70,7 @@ export async function captureEmail(data: LeadData): Promise<EmailCaptureResult> 
 
     return {
       success: true,
-      leadId: result.leadId,
+      leadId,
     };
   } catch (error) {
     return {

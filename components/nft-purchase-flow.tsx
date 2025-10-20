@@ -10,6 +10,7 @@ import {
   Wallet,
   Mail,
   User,
+  Phone,
   CheckCircle,
   XCircle,
   Loader2,
@@ -20,9 +21,12 @@ import {
 import { captureEmail, saveLeadToLocalStorage, isValidEmail } from "@/lib/email-capture"
 import { createStripeCheckout } from "@/lib/payment/stripe"
 import { SUPPORTED_CRYPTOS, type SupportedCrypto } from "@/lib/payment/crypto"
-import { useMintNFT, useCalculatePrice } from "@/hooks/web3/useMintNFT"
+import { useMintNFT, useCalculatePrice, useCalculatePriceInToken } from "@/hooks/web3/useMintNFT"
 import { useAccount, useConnect } from "wagmi"
-import { formatEther } from "viem"
+import { formatEther, formatUnits } from "viem"
+import { TOKENS, type SupportedToken } from "@/lib/web3/tokens"
+import { useERC20Token } from "@/hooks/web3/useERC20"
+import { getContractAddress } from "@/lib/web3/config"
 import { NetworkChecker } from "@/components/network-checker"
 import { TransactionStatus } from "@/components/transaction-status"
 import { parseWeb3Error, logWeb3Error } from "@/lib/web3/errors"
@@ -48,23 +52,47 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
   const [step, setStep] = useState<FlowStep>("amount")
   const [investmentAmount, setInvestmentAmount] = useState(initialAmount)
 
+  // Payment state - debe declararse ANTES de usar en hooks
+  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "crypto" | null>(null)
+  const [selectedCrypto, setSelectedCrypto] = useState<SupportedCrypto>("USDC")
+  const [selectedToken, setSelectedToken] = useState<SupportedToken>('USDC')
+  const [needsApproval, setNeedsApproval] = useState(false)
+
   // Track flow started
   useEffect(() => {
     trackInvestmentStarted()
   }, [])
 
-  // Web3 hooks - usan investmentAmount declarado arriba
+  // Web3 hooks - usan investmentAmount y selectedToken declarados arriba
   const { address, isConnected, chain } = useAccount()
-  const { mintNFT, hash, isPending, isConfirming, isSuccess, error: mintError } = useMintNFT(chain?.id)
+  const { mintNFT, mintNFTWithToken, hash, isPending, isConfirming, isSuccess, error: mintError } = useMintNFT(chain?.id)
   const { data: priceData } = useCalculatePrice(investmentAmount, chain?.id)
+
+  // Get contract address for ERC20 approvals
+  const contractAddress = getContractAddress(chain?.id || 534352)
+
+  // Token-specific price calculation
+  const selectedTokenAddress = TOKENS[selectedToken].address || ''
+  const { data: tokenPriceData } = useCalculatePriceInToken(
+    investmentAmount,
+    selectedTokenAddress,
+    chain?.id
+  )
+
+  // ERC20 token hook (for USDC/USDT)
+  const {
+    balance: tokenBalance,
+    allowance: tokenAllowance,
+    approve,
+    isApproving,
+    isConfirmingApproval,
+    isApproveSuccess,
+  } = useERC20Token(selectedTokenAddress, contractAddress)
 
   // User info
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
-
-  // Payment
-  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "crypto" | null>(null)
-  const [selectedCrypto, setSelectedCrypto] = useState<SupportedCrypto>("USDC")
+  const [whatsapp, setWhatsapp] = useState("")
 
   // Status
   const [error, setError] = useState("")
@@ -89,8 +117,9 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
       paymentMethod: paymentMethod || undefined,
       status: "interested",
       timestamp: new Date().toISOString(),
+      metadata: { whatsapp },
     })
-  }, [email, name, investmentAmount, paymentMethod])
+  }, [email, name, whatsapp, investmentAmount, paymentMethod])
 
   // Handle successful mint
   useEffect(() => {
@@ -99,8 +128,24 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
       setTxHash(hash)
       setStep("success")
       setProcessing(false)
+
+      // Actualizar lead en base de datos
+      if (leadId && hash) {
+        fetch('/api/leads/list', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            leadId,
+            updates: {
+              status: 'NFT_DELIVERED',
+              nftMinted: true,
+              mintTxHash: hash,
+            },
+          }),
+        }).catch(err => console.error('Error actualizando lead:', err))
+      }
     }
-  }, [isSuccess, hash, investmentAmount, chain?.id])
+  }, [isSuccess, hash, investmentAmount, chain?.id, leadId])
 
   // Handle mint errors with better parsing
   useEffect(() => {
@@ -132,6 +177,10 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
       setError("Por favor ingresa un email válido")
       return false
     }
+    if (!whatsapp.trim()) {
+      setError("Por favor ingresa tu número de WhatsApp")
+      return false
+    }
     setError("")
     return true
   }
@@ -147,6 +196,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
       investmentAmount,
       status: "interested",
       timestamp: new Date().toISOString(),
+      metadata: { whatsapp },
     })
 
     if (result.success && result.leadId) {
@@ -183,9 +233,65 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
     setProcessing(false)
   }
 
+  // Check if approval is needed for ERC20 tokens
+  useEffect(() => {
+    if (selectedToken !== 'ETH' && tokenPriceData && tokenAllowance !== undefined) {
+      const needsApprovalCheck = tokenAllowance < tokenPriceData
+      // console.log('🔍 Approval Check:', {
+      //   selectedToken,
+      //   tokenAllowance: tokenAllowance.toString(),
+      //   tokenPriceData: tokenPriceData.toString(),
+      //   needsApproval: needsApprovalCheck
+      // })
+      setNeedsApproval(needsApprovalCheck)
+    } else {
+      setNeedsApproval(false)
+    }
+  }, [selectedToken, tokenPriceData, tokenAllowance])
+
+  // Handle ERC20 approval
+  const handleApproveToken = async () => {
+    // console.log('🎯 handleApproveToken called')
+
+    if (!tokenPriceData) {
+      console.error('❌ No tokenPriceData available')
+      setError("Error calculando el precio del token")
+      return
+    }
+
+    try {
+      const tokenDecimals = TOKENS[selectedToken].decimals
+      const amountToApprove = formatUnits(tokenPriceData, tokenDecimals)
+
+      // console.log('💰 Approving token:', {
+      //   token: selectedToken,
+      //   amount: amountToApprove,
+      //   decimals: tokenDecimals,
+      //   rawAmount: tokenPriceData.toString()
+      // })
+
+      await approve(amountToApprove, tokenDecimals)
+      // console.log('✅ Approval transaction sent')
+    } catch (err: any) {
+      console.error('❌ Approval failed:', err)
+      logWeb3Error(err, 'Token Approval')
+      const parsed = parseWeb3Error(err)
+      setError(parsed.message)
+    }
+  }
+
   const handleCryptoPayment = async () => {
+    // console.log('🚀 handleCryptoPayment called', {
+    //   selectedToken,
+    //   isConnected,
+    //   address: address?.slice(0, 10) + '...',
+    //   chainId: chain?.id,
+    //   needsApproval
+    // })
+
     // Verificar que la wallet esté conectada
     if (!isConnected || !address) {
+      console.error('❌ Wallet not connected')
       setError("Por favor conecta tu wallet primero")
       setStep("error")
       return
@@ -193,18 +299,36 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
 
     // Verificar que esté en la red correcta (Scroll Mainnet)
     if (chain?.id !== 534352) {
+      console.error('❌ Wrong network:', chain?.id)
       setError("Por favor cambia a la red Scroll Mainnet en tu wallet")
       setStep("error")
       return
     }
 
-    // Verificar que tengamos el precio calculado del contrato
-    if (!priceData) {
+    // Verificar precio según el token seleccionado
+    const currentPrice = selectedToken === 'ETH' ? priceData : tokenPriceData
+    // console.log('💵 Current price:', {
+    //   selectedToken,
+    //   priceData: priceData?.toString(),
+    //   tokenPriceData: tokenPriceData?.toString(),
+    //   currentPrice: currentPrice?.toString()
+    // })
+
+    if (!currentPrice) {
+      console.error('❌ No price available')
       setError("Error calculando el precio. Por favor intenta de nuevo.")
       setStep("error")
       return
     }
 
+    // Para tokens ERC20, verificar que haya suficiente allowance
+    if (selectedToken !== 'ETH' && needsApproval) {
+      console.error('❌ Needs approval first')
+      setError("Por favor aprueba el gasto del token primero")
+      return
+    }
+
+    // console.log('✅ All validations passed, starting mint process')
     trackNFTMintInitiated(investmentAmount, 'crypto')
     setProcessing(true)
     setStep("processing")
@@ -236,15 +360,29 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
 
       console.log('✅ NFT subido a IPFS:', ipfsData.tokenURI)
 
-      // 3. Mintear NFT con tokenURI de IPFS y precio del contrato
-      await mintNFT({
-        investmentAmount,
-        tokenURI: ipfsData.tokenURI,
-        priceInWei: priceData, // Usar precio calculado por el contrato
-      })
+      // 3. Mintear NFT según el token seleccionado
+      if (selectedToken === 'ETH') {
+        // console.log('💎 Minting with ETH')
+        // Pago en ETH (nativo)
+        await mintNFT({
+          investmentAmount,
+          tokenURI: ipfsData.tokenURI,
+          priceInWei: priceData!, // Usar precio en ETH
+        })
+      } else {
+        // console.log('💰 Minting with ERC20:', selectedToken)
+        // Pago en ERC20 (USDC/USDT)
+        await mintNFTWithToken({
+          investmentAmount,
+          tokenURI: ipfsData.tokenURI,
+          tokenAddress: selectedTokenAddress,
+        })
+      }
 
+      // console.log('✅ Mint transaction sent')
       // El éxito se maneja en el useEffect
     } catch (err: any) {
+      console.error('❌ Crypto payment failed:', err)
       logWeb3Error(err, 'Crypto Payment')
       const parsed = parseWeb3Error(err)
       setError(parsed.message)
@@ -364,6 +502,22 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
                 <p className="text-xs text-gray-500">Tu NFT será entregado a este email</p>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp" className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  WhatsApp
+                </Label>
+                <Input
+                  id="whatsapp"
+                  type="tel"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                  placeholder="+52 123 456 7890"
+                  className="text-lg"
+                />
+                <p className="text-xs text-gray-500">Para enviarte actualizaciones sobre tu inversión</p>
+              </div>
+
               {/* Investment summary */}
               <Card className="bg-gray-50">
                 <CardContent className="p-4">
@@ -463,9 +617,11 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
                     </div>
                     <div className="flex-1">
                       <h4 className="font-bold text-lg mb-1">Criptomonedas</h4>
-                      <p className="text-sm text-gray-600 mb-2">Paga con ETH en Scroll Mainnet</p>
+                      <p className="text-sm text-gray-600 mb-2">Paga con ETH, USDC o USDT en Scroll Mainnet</p>
                       <div className="flex gap-2 text-xs text-gray-500">
                         <span>✓ ETH</span>
+                        <span>✓ USDC</span>
+                        <span>✓ USDT</span>
                       </div>
                       <div className="mt-2 text-sm font-semibold text-brand-dark">
                         ≈ ${amountUSD.toFixed(2)} USD en crypto
@@ -519,7 +675,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
                   <p className="font-semibold mb-1">Información importante:</p>
                   <ul className="space-y-1 text-xs">
                     <li>• Tu NFT será acuñado después de confirmar el pago</li>
-                    <li>• Recibirás un email con los detalles de tu NFT</li>
+                    <li>• Podrás ver tu NFT en tu wallet inmediatamente</li>
                     <li>• El proceso puede tomar 5-10 minutos</li>
                   </ul>
                 </div>
@@ -529,11 +685,74 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
         )
 
       case "crypto":
+        // Calcular precio según el token seleccionado
+        const currentPrice = selectedToken === 'ETH' ? priceData : tokenPriceData
+        const currentDecimals = TOKENS[selectedToken].decimals
+        const formattedPrice = currentPrice
+          ? formatUnits(currentPrice, currentDecimals)
+          : "Calculando..."
+
         return (
           <div className="space-y-6">
             <div className="text-center">
               <h3 className="text-2xl font-bold text-brand-dark mb-2">Pago con criptomonedas</h3>
-              <p className="text-gray-600">Conecta tu wallet y paga en Scroll Mainnet</p>
+              <p className="text-gray-600">Elige tu moneda y conecta tu wallet</p>
+            </div>
+
+            {/* Token Selector */}
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">Selecciona tu moneda de pago:</Label>
+              <div className="grid grid-cols-3 gap-3">
+                {(['ETH', 'USDC', 'USDT'] as SupportedToken[]).map((token) => {
+                  const tokenInfo = TOKENS[token]
+                  const isSelected = selectedToken === token
+                  const isRecommended = token === 'USDC'
+
+                  return (
+                    <Card
+                      key={token}
+                      className={`cursor-pointer transition-all hover:shadow-md relative ${
+                        isSelected
+                          ? "border-2 border-brand-aqua bg-brand-aqua/5"
+                          : "border border-gray-200 hover:border-brand-aqua/50"
+                      }`}
+                      onClick={() => setSelectedToken(token)}
+                    >
+                      {isRecommended && (
+                        <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                          Recomendado
+                        </div>
+                      )}
+                      <CardContent className="p-4 text-center">
+                        <div className="text-3xl mb-2">{tokenInfo.logo}</div>
+                        <div className="font-bold text-sm">{tokenInfo.symbol}</div>
+                        <div className="text-xs text-gray-500 mt-1">{tokenInfo.name}</div>
+                        {isSelected && <CheckCircle className="h-5 w-5 text-brand-aqua mx-auto mt-2" />}
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+
+              {/* Educational info about tokens */}
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="p-3">
+                  <div className="flex gap-2 text-xs text-gray-700">
+                    <Info className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      {selectedToken === 'ETH' && (
+                        <p><strong>ETH</strong> es la moneda nativa de Ethereum y Scroll. Ideal si ya tienes ETH en tu wallet.</p>
+                      )}
+                      {selectedToken === 'USDC' && (
+                        <p><strong>USDC</strong> es una stablecoin (1 USDC = $1 USD). Recomendado por su estabilidad de precio.</p>
+                      )}
+                      {selectedToken === 'USDT' && (
+                        <p><strong>USDT</strong> es otra stablecoin popular (1 USDT = $1 USD). Ampliamente aceptada en exchanges.</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Network checker */}
@@ -560,13 +779,21 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <CheckCircle className="h-5 w-5 text-green-600" />
-                    <div>
+                    <div className="flex-1">
                       <p className="font-semibold text-green-900">Wallet conectada</p>
                       <p className="text-sm text-green-700">{address?.slice(0, 6)}...{address?.slice(-4)}</p>
                       <p className="text-xs text-green-600 mt-1">
                         Red: {chain?.name || `Chain ID ${chain?.id || 'desconocido'}`}
                       </p>
                     </div>
+                    {selectedToken !== 'ETH' && tokenBalance !== undefined && (
+                      <div className="text-right">
+                        <p className="text-xs text-gray-600">Balance {selectedToken}:</p>
+                        <p className="text-sm font-semibold text-green-900">
+                          {formatUnits(tokenBalance, currentDecimals)} {selectedToken}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -596,18 +823,61 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
               </Card>
             )}
 
+            {/* ERC20 Approval Step */}
+            {selectedToken !== 'ETH' && isConnected && chain?.id === 534352 && needsApproval && (
+              <Card className="bg-yellow-50 border-yellow-200">
+                <CardContent className="p-4">
+                  <div className="flex gap-3">
+                    <Info className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-yellow-900 mb-2">Paso 1: Aprobar gasto de {selectedToken}</p>
+                      <p className="text-sm text-yellow-900 mb-3">
+                        Para pagar con {selectedToken}, primero debes aprobar que el contrato pueda gastar tus tokens.
+                        Esto es un proceso estándar de seguridad en blockchain.
+                      </p>
+                      <Button
+                        onClick={handleApproveToken}
+                        disabled={isApproving || isConfirmingApproval}
+                        className="w-full bg-yellow-600 hover:bg-yellow-700 text-white"
+                      >
+                        {isApproving || isConfirmingApproval ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {isApproving ? "Esperando confirmación..." : "Confirmando aprobación..."}
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            Aprobar {formattedPrice} {selectedToken}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Payment Info */}
             <Card className="bg-blue-50 border-blue-200">
               <CardContent className="p-4 flex gap-3">
                 <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-gray-700">
-                  <p className="font-semibold mb-1">Información de pago:</p>
+                  <p className="font-semibold mb-1">Resumen de pago:</p>
                   <p>• Inversión: <strong>${investmentAmount.toLocaleString()} MXN</strong></p>
-                  <p>• Precio estimado: <strong>{priceData ? formatEther(priceData) : "Calculando..."} ETH</strong></p>
+                  <p>• Precio a pagar: <strong>{formattedPrice} {selectedToken}</strong></p>
                   <p>• Red: <strong>Scroll Mainnet</strong></p>
-                  <p className="text-xs mt-2">Tu NFT será minteado instantáneamente después del pago.</p>
+                  <p className="text-xs mt-2 text-gray-600">
+                    {selectedToken === 'ETH'
+                      ? "Tu NFT será minteado instantáneamente después del pago."
+                      : "Después de aprobar, podrás completar el pago y mintear tu NFT."
+                    }
+                  </p>
                 </div>
               </CardContent>
             </Card>
+
+            {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => setStep("payment-method")} className="flex-1">
@@ -616,7 +886,14 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
               </Button>
               <Button
                 onClick={handleCryptoPayment}
-                disabled={!isConnected || chain?.id !== 534352 || processing || isPending || isConfirming}
+                disabled={
+                  !isConnected ||
+                  chain?.id !== 534352 ||
+                  processing ||
+                  isPending ||
+                  isConfirming ||
+                  (selectedToken !== 'ETH' && needsApproval)
+                }
                 className="flex-1 bg-brand-yellow hover:bg-brand-yellow/90 text-brand-dark font-semibold"
               >
                 {isPending || isConfirming ? (
@@ -627,7 +904,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
                 ) : (
                   <>
                     <Wallet className="mr-2 h-4 w-4" />
-                    Pagar y Mintear NFT
+                    {selectedToken === 'ETH' ? 'Pagar y Mintear NFT' : `Paso 2: Pagar y Mintear NFT`}
                   </>
                 )}
               </Button>
