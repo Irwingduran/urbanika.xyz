@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { sendWelcomeEmail, sendNFTReadyEmail, sendPaymentReminderEmail } from '@/lib/email'
+// DESACTIVADO: Email functionality temporalmente deshabilitado
+// import { sendWelcomeEmail, sendNFTReadyEmail, sendPaymentReminderEmail } from '@/lib/email'
 
 /**
  * API para enviar notificaciones por email a leads
+ * TEMPORALMENTE DESACTIVADO - Email functionality será implementado en el futuro
  *
  * POST /api/leads/notify
  * Body: { leadId: string, type: 'welcome' | 'nft_ready' | 'reminder', data?: any }
@@ -31,6 +33,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // DESACTIVADO: Email sending temporalmente deshabilitado
+    console.log(`📧 Email notifications disabled (testing mode) - Would send ${type} email to ${lead.email}`)
+
+    // Mock success response
+    const result: { success: boolean; error?: string } = { success: true }
+
+    /* DESACTIVADO TEMPORALMENTE
     let result: { success: boolean; error?: string } = { success: false }
 
     // Enviar el email según el tipo
@@ -64,6 +73,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
     }
+    */
 
     // Si el email se envió exitosamente, actualizar el lead
     if (result.success) {
@@ -76,11 +86,11 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      console.log(`✅ Email enviado al lead ${leadId} (${type})`)
+      console.log(`✅ Email (mock) enviado al lead ${leadId} (${type})`)
 
       return NextResponse.json({
         success: true,
-        message: 'Email enviado exitosamente',
+        message: 'Email enviado exitosamente (modo testing)',
         leadId,
         type,
       })
