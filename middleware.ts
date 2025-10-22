@@ -2,66 +2,56 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 /**
- * Middleware para configurar Content Security Policy (CSP) con nonces
+ * Middleware para configurar Content Security Policy (CSP) balanceada
  *
- * Esta implementación es MÁS SEGURA que usar 'unsafe-eval' porque:
- * 1. Genera un nonce único por cada request
- * 2. Solo permite scripts que incluyan ese nonce específico
- * 3. No permite evaluación dinámica de código arbitrario
+ * Esta implementación balancea seguridad y funcionalidad:
+ * 1. Permite 'unsafe-eval' necesario para Web3 (WalletConnect, Wagmi, Viem)
+ * 2. Permite 'unsafe-inline' necesario para Next.js y React
+ * 3. Limita estrictamente los dominios permitidos (whitelist)
+ * 4. Mantiene otras protecciones importantes (XSS, clickjacking, etc.)
  *
  * Compatible con:
+ * - Next.js (scripts inline automáticos)
+ * - React (event handlers inline)
  * - Wagmi/Viem (Web3)
  * - WalletConnect
  * - Vercel Analytics
  */
 
 export function middleware(request: NextRequest) {
-  // Generar un nonce único para esta request
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
-
-  // Configurar CSP segura sin unsafe-eval
+  // Configurar CSP balanceada con unsafe-eval y unsafe-inline
   const cspHeader = [
     "default-src 'self'",
-    // Scripts: permitir self, nonce, y dominios específicos confiables
-    // NO incluimos 'unsafe-eval' ni 'unsafe-inline'
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://vercel.live https://va.vercel-scripts.com https://vitals.vercel-insights.com`,
-    // Estilos: permitir inline necesario para styled-components y Tailwind
+    // Scripts: permitir eval e inline SOLO para funcionalidad Web3 y Next.js
+    // Limitamos los dominios externos a servicios confiables
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://vitals.vercel-insights.com",
+    // Estilos: permitir inline necesario para Tailwind y componentes
     "style-src 'self' 'unsafe-inline'",
     // Imágenes: permitir todas las fuentes HTTPS, data URIs, y blobs
     "img-src 'self' data: https: blob:",
     // Fuentes
     "font-src 'self' data:",
-    // Conexiones: Web3 RPCs, WalletConnect, Analytics
+    // Conexiones: whitelist estricta de servicios Web3 y Analytics
     "connect-src 'self' https://*.walletconnect.com https://*.walletconnect.org https://*.reown.com wss://*.walletconnect.com wss://*.walletconnect.org wss://*.reown.com https://rpc.scroll.io https://scroll.blockpi.network https://scroll-mainnet.public.blastapi.io https://vercel.live https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.scrollscan.com https://scrollscan.com https://api.coingecko.com https://pinata.cloud https://*.pinata.cloud https://gateway.pinata.cloud",
     // Frames: WalletConnect modal
     "frame-src 'self' https://verify.walletconnect.com https://verify.walletconnect.org https://verify.reown.com",
     // Workers: necesario para Web3
     "worker-src 'self' blob:",
-    // WebAssembly: necesario para algunas operaciones crypto
-    "script-src-elem 'self' 'nonce-${nonce}' https://vercel.live https://va.vercel-scripts.com https://vitals.vercel-insights.com",
-    // Object src
+    // Object src: bloquear objetos embebidos
     "object-src 'none'",
-    // Base URI
+    // Base URI: solo mismo origen
     "base-uri 'self'",
-    // Form actions
+    // Form actions: solo mismo origen
     "form-action 'self'",
-    // Frame ancestors (prevenir clickjacking)
+    // Frame ancestors: prevenir clickjacking
     "frame-ancestors 'none'",
     // Upgrade insecure requests
     "upgrade-insecure-requests",
   ].join('; ')
 
-  // Crear response con headers de seguridad
-  const requestHeaders = new Headers(request.headers)
-  requestHeaders.set('x-nonce', nonce)
+  const response = NextResponse.next()
 
-  const response = NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  })
-
-  // Aplicar headers de seguridad
+  // Aplicar CSP
   response.headers.set('Content-Security-Policy', cspHeader)
 
   // Headers de seguridad adicionales
