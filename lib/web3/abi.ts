@@ -129,6 +129,35 @@ export const URBANIKA_NFT_ABI = [
     stateMutability: 'view',
     type: 'function',
   },
+  // Multi-token support functions
+  {
+    inputs: [
+      { name: 'investmentAmount', type: 'uint256' },
+      { name: 'tokenAddress', type: 'address' }
+    ],
+    name: 'calculatePriceInToken',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { name: 'investmentAmount', type: 'uint256' },
+      { name: 'tokenURI', type: 'string' },
+      { name: 'paymentToken', type: 'address' }
+    ],
+    name: 'publicMintWithToken',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'tokenAddress', type: 'address' }],
+    name: 'tokenPricePerUnit',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
   {
     inputs: [],
     name: 'pricePerUnit',
