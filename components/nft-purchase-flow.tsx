@@ -154,16 +154,13 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
 
       // Actualizar lead en base de datos
       if (leadId && hash) {
-        fetch('/api/leads/list', {
-          method: 'PATCH',
+        fetch('/api/leads/update-mint', {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             leadId,
-            updates: {
-              status: 'NFT_DELIVERED',
-              nftMinted: true,
-              mintTxHash: hash,
-            },
+            mintTxHash: hash,
+            tokenId: null, // Se puede obtener del evento del contrato si es necesario
           }),
         }).catch(err => console.error('Error actualizando lead:', err))
       }
