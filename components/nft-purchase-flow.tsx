@@ -65,7 +65,18 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
 
   // Web3 hooks - usan investmentAmount y selectedToken declarados arriba
   const { address, isConnected, chain } = useAccount()
-  const { mintNFT, mintNFTWithToken, hash, isPending, isConfirming, isSuccess, error: mintError } = useMintNFT(chain?.id)
+  const {
+    mintNFT,
+    mintNFTWithToken,
+    hash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    isTransactionError,
+    transactionError,
+    transactionStatus,
+    error: mintError
+  } = useMintNFT(chain?.id)
   const { data: priceData } = useCalculatePrice(investmentAmount, chain?.id)
 
   // Get contract address for ERC20 approvals
@@ -128,6 +139,8 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
       hash,
       isPending,
       isConfirming,
+      isTransactionError,
+      transactionStatus,
       step
     })
 
@@ -154,7 +167,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
         }).catch(err => console.error('Error actualizando lead:', err))
       }
     }
-  }, [isSuccess, hash, isPending, isConfirming, investmentAmount, chain?.id, leadId, step])
+  }, [isSuccess, hash, isPending, isConfirming, isTransactionError, transactionStatus, investmentAmount, chain?.id, leadId, step])
 
   // Handle mint errors with better parsing
   useEffect(() => {
@@ -167,6 +180,33 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
       setProcessing(false)
     }
   }, [mintError, investmentAmount])
+
+  // Handle transaction failures (when transaction is mined but reverted)
+  useEffect(() => {
+    if (isTransactionError && hash) {
+      console.error('❌ Transaction FAILED on blockchain:', {
+        hash,
+        error: transactionError,
+        status: transactionStatus
+      })
+
+      let errorMessage = "La transacción falló en la blockchain. "
+
+      // Detectar errores comunes
+      if (transactionError?.message?.includes('insufficient')) {
+        errorMessage += "Verifica que tengas suficiente USDC y allowance aprobado."
+      } else if (transactionError?.message?.includes('allowance')) {
+        errorMessage += "El permiso de gasto del token no es suficiente. Por favor aprueba de nuevo."
+      } else {
+        errorMessage += `Error: ${transactionError?.message || 'La transacción fue revertida.'}`
+      }
+
+      trackNFTMintFailed(investmentAmount, 'transaction_reverted', errorMessage)
+      setError(errorMessage)
+      setStep("error")
+      setProcessing(false)
+    }
+  }, [isTransactionError, hash, transactionError, transactionStatus, investmentAmount])
 
   const validateAmount = () => {
     if (investmentAmount < 250) {

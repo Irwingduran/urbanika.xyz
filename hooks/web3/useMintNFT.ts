@@ -19,7 +19,13 @@ export function useMintNFT(chainId?: number) {
   } = useWriteContract()
 
   // Esperar confirmación de transacción
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+  const {
+    isLoading: isConfirming,
+    isSuccess,
+    isError: isTransactionError,
+    error: transactionError,
+    status: transactionStatus,
+  } = useWaitForTransactionReceipt({
     hash,
   })
 
@@ -116,7 +122,10 @@ export function useMintNFT(chainId?: number) {
     isPending,
     isConfirming,
     isSuccess,
-    error,
+    isTransactionError,
+    transactionError,
+    transactionStatus,
+    error, // Error de writeContract
   }
 }
 
