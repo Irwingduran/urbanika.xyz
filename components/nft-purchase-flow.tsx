@@ -432,6 +432,42 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
         console.log('📍 Token address:', selectedTokenAddress)
         console.log('📝 Token URI:', ipfsData.tokenURI)
         console.log('💵 Investment amount:', investmentAmount)
+
+        // CRITICAL: Verificar balance y allowance ANTES de mintear
+        const tokenDecimals = TOKENS[selectedToken].decimals
+        const priceRequired = tokenPriceData!
+        const balanceFormatted = tokenBalance ? formatUnits(tokenBalance, tokenDecimals) : '0'
+        const allowanceFormatted = tokenAllowance ? formatUnits(tokenAllowance, tokenDecimals) : '0'
+        const priceFormatted = formatUnits(priceRequired, tokenDecimals)
+
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+        console.log('🔍 PRE-MINT VERIFICATION:')
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+        console.log(`💰 Tu balance de ${selectedToken}:`, balanceFormatted)
+        console.log(`✅ Allowance aprobado:`, allowanceFormatted)
+        console.log(`💸 Precio requerido:`, priceFormatted)
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+
+        const balanceNum = parseFloat(balanceFormatted)
+        const allowanceNum = parseFloat(allowanceFormatted)
+        const priceNum = parseFloat(priceFormatted)
+
+        if (balanceNum < priceNum) {
+          console.error('❌ INSUFFICIENT BALANCE!')
+          console.error(`   Tienes: ${balanceFormatted} ${selectedToken}`)
+          console.error(`   Necesitas: ${priceFormatted} ${selectedToken}`)
+          throw new Error(`Balance insuficiente. Necesitas ${priceFormatted} ${selectedToken} pero solo tienes ${balanceFormatted}`)
+        }
+
+        if (allowanceNum < priceNum) {
+          console.error('❌ INSUFFICIENT ALLOWANCE!')
+          console.error(`   Aprobado: ${allowanceFormatted} ${selectedToken}`)
+          console.error(`   Necesitas: ${priceFormatted} ${selectedToken}`)
+          throw new Error(`Allowance insuficiente. Por favor aprueba ${priceFormatted} ${selectedToken} o más.`)
+        }
+
+        console.log('✅ Balance y allowance verificados - procediendo con mint...')
+
         // Pago en ERC20 (USDC/USDT)
         await mintNFTWithToken({
           investmentAmount,
