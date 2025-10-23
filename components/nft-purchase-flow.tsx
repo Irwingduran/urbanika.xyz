@@ -362,7 +362,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
 
       // 3. Mintear NFT según el token seleccionado
       if (selectedToken === 'ETH') {
-        // console.log('💎 Minting with ETH')
+        console.log('💎 Minting with ETH')
         // Pago en ETH (nativo)
         await mintNFT({
           investmentAmount,
@@ -370,7 +370,10 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
           priceInWei: priceData!, // Usar precio en ETH
         })
       } else {
-        // console.log('💰 Minting with ERC20:', selectedToken)
+        console.log('💰 Minting with ERC20:', selectedToken)
+        console.log('📍 Token address:', selectedTokenAddress)
+        console.log('📝 Token URI:', ipfsData.tokenURI)
+        console.log('💵 Investment amount:', investmentAmount)
         // Pago en ERC20 (USDC/USDT)
         await mintNFTWithToken({
           investmentAmount,
@@ -379,7 +382,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
         })
       }
 
-      // console.log('✅ Mint transaction sent')
+      console.log('✅ Mint transaction sent')
       // El éxito se maneja en el useEffect
     } catch (err: any) {
       console.error('❌ Crypto payment failed:', err)

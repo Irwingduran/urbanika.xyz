@@ -73,7 +73,16 @@ export function useMintNFT(chainId?: number) {
     // Convertir MXN a wei
     const investmentAmountWei = parseEther(investmentAmount.toString())
 
+    console.log('🔧 useMintNFT.mintNFTWithToken called with:', {
+      investmentAmount,
+      investmentAmountWei: investmentAmountWei.toString(),
+      tokenURI,
+      tokenAddress,
+      contractAddress,
+    })
+
     try {
+      console.log('📝 Calling writeContract...')
       await writeContract({
         address: contractAddress,
         abi: URBANIKA_NFT_ABI,
@@ -81,8 +90,9 @@ export function useMintNFT(chainId?: number) {
         args: [investmentAmountWei, tokenURI, tokenAddress as `0x${string}`],
         // No se envía value porque el pago es en ERC20
       })
+      console.log('✅ writeContract completed')
     } catch (err) {
-      console.error('Error minteando NFT con token:', err)
+      console.error('❌ Error minteando NFT con token:', err)
       throw err
     }
   }
