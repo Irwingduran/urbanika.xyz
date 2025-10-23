@@ -29,6 +29,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validar que investor es una dirección de wallet válida
+    if (typeof investor !== 'string' || !investor.startsWith('0x') || investor.length !== 42) {
+      return NextResponse.json(
+        { error: 'Invalid wallet address' },
+        { status: 400 }
+      )
+    }
+
+    // Validar que los montos son números positivos
+    if (investmentAmount <= 0 || expectedReturn <= 0) {
+      return NextResponse.json(
+        { error: 'Investment and return must be positive numbers' },
+        { status: 400 }
+      )
+    }
+
     if (!process.env.PINATA_JWT) {
       return NextResponse.json(
         { error: 'Pinata JWT not configured. Please add PINATA_JWT to your .env file.' },
@@ -86,44 +102,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Endpoint para pre-subir la imagen base (útil para testing)
-export async function GET(request: NextRequest) {
-  try {
-    if (!process.env.PINATA_JWT) {
-      return NextResponse.json(
-        { error: 'Pinata JWT not configured' },
-        { status: 500 }
-      )
-    }
-
-    // Subir solo la imagen base
-    const imagePath = path.join(process.cwd(), 'public', 'nft-image.png')
-    const imageBuffer = await fs.readFile(imagePath)
-    const blob = new Blob([imageBuffer], { type: 'image/png' })
-    const imageFile = new File([blob], 'urbanika-nft.png', { type: 'image/png' })
-
-    const { uploadFileToIPFS } = await import('@/lib/ipfs/pinata')
-    const result = await uploadFileToIPFS(imageFile)
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error || 'Failed to upload image' },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: 'Base image uploaded successfully',
-      ipfsUrl: result.ipfsUrl,
-      ipfsHash: result.ipfsHash,
-      gatewayUrl: `https://gateway.pinata.cloud/ipfs/${result.ipfsHash}`,
-    })
-  } catch (error: any) {
-    console.error('❌ Error uploading base image:', error)
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
+/**
+ * NOTA DE SEGURIDAD:
+ * El endpoint GET anterior fue removido porque permitía a cualquiera
+ * subir archivos a Pinata sin autenticación, consumiendo la cuota.
+ *
+ * Para subir la imagen base, usar el script:
+ * npm run upload-nft-image
+ */
