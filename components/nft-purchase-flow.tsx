@@ -30,6 +30,7 @@ import { getContractAddress } from "@/lib/web3/config"
 import { NetworkChecker } from "@/components/network-checker"
 import { TransactionStatus } from "@/components/transaction-status"
 import { parseWeb3Error, logWeb3Error } from "@/lib/web3/errors"
+import { parseTransactionError, getTroubleshootingSteps } from "@/lib/web3/transaction-errors"
 import {
   trackInvestmentStarted,
   trackInvestmentAmount,
@@ -190,18 +191,29 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
         status: transactionStatus
       })
 
-      let errorMessage = "La transacción falló en la blockchain. "
+      const parsed = parseTransactionError(transactionError)
+      const steps = getTroubleshootingSteps(parsed.type)
 
-      // Detectar errores comunes
-      if (transactionError?.message?.includes('insufficient')) {
-        errorMessage += "Verifica que tengas suficiente USDC y allowance aprobado."
-      } else if (transactionError?.message?.includes('allowance')) {
-        errorMessage += "El permiso de gasto del token no es suficiente. Por favor aprueba de nuevo."
-      } else {
-        errorMessage += `Error: ${transactionError?.message || 'La transacción fue revertida.'}`
+      let errorMessage = parsed.userMessage
+
+      // Agregar link al explorer para que el usuario pueda ver la transacción
+      if (hash) {
+        errorMessage += `\n\nVer transacción: https://scrollscan.com/tx/${hash}`
       }
 
-      trackNFTMintFailed(investmentAmount, 'transaction_reverted', errorMessage)
+      // Agregar pasos de troubleshooting
+      if (steps.length > 0) {
+        errorMessage += '\n\nQué hacer:\n' + steps.map((step, i) => `${i + 1}. ${step}`).join('\n')
+      }
+
+      console.error('📋 Error details:', {
+        type: parsed.type,
+        userMessage: parsed.userMessage,
+        technicalDetails: parsed.technicalDetails,
+        troubleshootingSteps: steps
+      })
+
+      trackNFTMintFailed(investmentAmount, parsed.type, parsed.userMessage)
       setError(errorMessage)
       setStep("error")
       setProcessing(false)
