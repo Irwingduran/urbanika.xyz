@@ -123,7 +123,16 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
 
   // Handle successful mint
   useEffect(() => {
+    console.log('🔍 Mint status changed:', {
+      isSuccess,
+      hash,
+      isPending,
+      isConfirming,
+      step
+    })
+
     if (isSuccess && hash) {
+      console.log('🎉 NFT mint SUCCESS detected!')
       trackNFTMintSuccess(investmentAmount, hash, chain?.id || 534352)
       setTxHash(hash)
       setStep("success")
@@ -145,7 +154,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
         }).catch(err => console.error('Error actualizando lead:', err))
       }
     }
-  }, [isSuccess, hash, investmentAmount, chain?.id, leadId])
+  }, [isSuccess, hash, isPending, isConfirming, investmentAmount, chain?.id, leadId, step])
 
   // Handle mint errors with better parsing
   useEffect(() => {

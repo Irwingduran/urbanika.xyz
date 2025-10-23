@@ -41,16 +41,27 @@ export function useMintNFT(chainId?: number) {
     // Convertir MXN a wei
     const investmentAmountWei = parseEther(investmentAmount.toString())
 
+    console.log('🔧 useMintNFT.mintNFT called with:', {
+      investmentAmount,
+      investmentAmountWei: investmentAmountWei.toString(),
+      tokenURI,
+      priceInWei: priceInWei.toString(),
+      contractAddress,
+    })
+
     try {
-      await writeContract({
+      console.log('📝 Calling writeContract for ETH mint...')
+      const result = await writeContract({
         address: contractAddress,
         abi: URBANIKA_NFT_ABI,
         functionName: 'publicMint',
         args: [investmentAmountWei, tokenURI],
         value: priceInWei, // Usar precio del contrato
       })
+      console.log('✅ writeContract completed, result:', result)
+      return result
     } catch (err) {
-      console.error('Error minteando NFT:', err)
+      console.error('❌ Error minteando NFT:', err)
       throw err
     }
   }
@@ -83,14 +94,15 @@ export function useMintNFT(chainId?: number) {
 
     try {
       console.log('📝 Calling writeContract...')
-      await writeContract({
+      const result = await writeContract({
         address: contractAddress,
         abi: URBANIKA_NFT_ABI,
         functionName: 'publicMintWithToken',
         args: [investmentAmountWei, tokenURI, tokenAddress as `0x${string}`],
         // No se envía value porque el pago es en ERC20
       })
-      console.log('✅ writeContract completed')
+      console.log('✅ writeContract completed, result:', result)
+      return result
     } catch (err) {
       console.error('❌ Error minteando NFT con token:', err)
       throw err
