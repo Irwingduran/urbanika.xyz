@@ -331,6 +331,49 @@ export const URBANIKA_NFT_ABI = [
     name: 'MintPauseToggled',
     type: 'event',
   },
+  // Oracle de precios - funciones v2.0.2
+  {
+    inputs: [],
+    name: 'getETHPriceUSD',
+    outputs: [{ name: 'price', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'ethPriceFeed',
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'manualETHPrice',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: '_priceFeed', type: 'address' }],
+    name: 'setPriceFeed',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'newPrice', type: 'uint256' }],
+    name: 'setManualETHPrice',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'token', type: 'uint8' }],
+    name: 'getContractBalance',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
 ] as const
 
 // Types derivados del ABI (actualizado para v2.0)

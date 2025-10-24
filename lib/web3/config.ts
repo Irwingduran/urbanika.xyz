@@ -1,6 +1,7 @@
 import { http, createConfig, fallback, createStorage } from 'wagmi'
 import { scroll } from 'wagmi/chains'
 import { injected, walletConnect } from 'wagmi/connectors'
+import '@/lib/web3/metamask-fix' // Fix para errores de MetaMask
 
 /**
  * Configuración de Wagmi para Urbanika - Production
@@ -60,8 +61,8 @@ export const config = createConfig({
 // Chain por defecto: Scroll Mainnet
 export const defaultChain = scroll
 
-// Contract address en Scroll Mainnet (with multi-token support)
-export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET || '0xC099aC09eE9bc5dFB6d24B932E2E01aE59593b88'
+// Contract address en Scroll Mainnet (v2.0.2 with Chainlink Oracle)
+export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET || '0xB7DECf6d81EBE13F9b2B485a88a3aaeA40A7Afc0'
 
 // Helper para obtener contract address (siempre retorna mainnet)
 export function getContractAddress(chainId?: number): string {

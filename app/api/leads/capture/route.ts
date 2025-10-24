@@ -1,7 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { checkRateLimit } from '@/lib/auth/middleware'
 
 export async function POST(request: NextRequest) {
+  // Rate limiting agresivo para prevenir spam
+  const ip = request.headers.get('x-forwarded-for') ||
+             request.headers.get('x-real-ip') ||
+             'unknown'
+
+  if (!checkRateLimit(`lead-capture:${ip}`, 3, 300000)) { // 3 requests por 5 minutos
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429 }
+    )
+  }
+
   try {
     const data = await request.json()
 
@@ -31,23 +44,17 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    console.log('✅ Lead guardado en base de datos:', {
-      id: lead.id,
-      email: lead.email,
-      name: lead.name,
-      phone: lead.phone,
-      investmentAmount: lead.investmentAmount,
-      status: lead.status,
-      createdAt: lead.createdAt,
-    })
-
     return NextResponse.json({
       success: true,
       leadId: lead.id,
       message: 'Lead guardado exitosamente',
     })
   } catch (error) {
-    console.error('❌ Error capturando lead:', error)
+    // Log solo en desarrollo
+    if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") { console.error('Error capturando lead:', error) }
+    }
+
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

@@ -25,7 +25,6 @@ export async function POST(request: NextRequest) {
 
     // TODO: Integrar con tu servicio de email marketing
     // (Mailchimp, SendGrid, etc.)
-    console.log('📧 Email subscription:', { email, name })
 
     // Por ahora, solo registramos y retornamos éxito
     return NextResponse.json({
@@ -33,7 +32,7 @@ export async function POST(request: NextRequest) {
       message: 'Subscribed successfully',
     })
   } catch (error: any) {
-    console.error('❌ Error in email subscription:', error)
+    if (process.env.NODE_ENV === "development") { console.error('❌ Error in email subscription:', error) }
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }

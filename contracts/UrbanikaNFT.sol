@@ -10,21 +10,31 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+// Chainlink Price Feed interface
+interface AggregatorV3Interface {
+    function latestRoundData() external view returns (
+        uint80 roundId,
+        int256 price,
+        uint256 startedAt,
+        uint256 updatedAt,
+        uint80 answeredInRound
+    );
+    function decimals() external view returns (uint8);
+}
+
 /**
- * @title UrbanikaNFT - Production Ready Version
+ * @title UrbanikaNFT - Production Ready Version 2
  * @dev NFT de inversión para Urbanika - Red Scroll
  * @notice Cada NFT representa una inversión en el ecosistema de casas regenerativas
  *
- * Características de Seguridad v2.0:
- * - ERC-721 estándar compatible con todas las wallets y marketplaces
+ * Características v2.0 (Sin conversión a MXN):
+ * - Inversiones directas en ETH, USDC o USDT
  * - Sistema de retorno 1.5x basado en ventas de casas
  * - Tiers de inversión (Bronze, Silver, Gold, Platinum)
  * - Distribución de ganancias proporcional
  * - MAX_SUPPLY para evitar dilución
  * - Treasury con timelock para cambios
- * - Contador de NFTs activos optimizado
  * - Email hasheado para privacidad
- * - Pausa independiente de minting
  * - Metadata almacenado en IPFS
  */
 contract UrbanikaNFT is
@@ -37,29 +47,38 @@ contract UrbanikaNFT is
 {
     using SafeERC20 for IERC20;
 
-    // ============ State Variables ============
+    // ============ Enums ============
 
-    uint256 private _tokenIdCounter;
-
-    // Tiers de inversión
-    enum InvestmentTier {
-        Bronze,    // < 1000 MXN
-        Silver,    // 1000 - 4999 MXN
-        Gold,      // 5000 - 9999 MXN
-        Platinum   // >= 10000 MXN
+    enum PaymentToken {
+        ETH,
+        USDC,
+        USDT
     }
 
-    // Estructura de inversión (con emailHash en lugar de email)
+    enum InvestmentTier {
+        Bronze,    // < $25 USD
+        Silver,    // $25 - $250 USD
+        Gold,      // $250 - $500 USD
+        Platinum   // >= $500 USD
+    }
+
+    // ============ Structs ============
+
     struct Investment {
-        uint256 investmentAmount;      // Monto invertido (en wei equivalente MXN)
+        uint256 investmentAmount;      // Monto invertido (en wei de la moneda original)
         uint256 expectedReturn;        // Retorno esperado (1.5x)
         uint256 currentReturn;         // Retorno acumulado recibido
         uint256 mintDate;              // Timestamp de creación
         InvestmentTier tier;           // Nivel de inversión
+        PaymentToken paymentToken;     // Token usado para el pago
         bool isActive;                 // Estado del NFT
         address investor;              // Wallet del inversor
         bytes32 emailHash;             // Hash del email (para privacidad)
     }
+
+    // ============ State Variables ============
+
+    uint256 private _tokenIdCounter;
 
     // Mappings
     mapping(uint256 => Investment) public investments;
@@ -71,27 +90,30 @@ contract UrbanikaNFT is
     uint256 public constant MULTIPLIER_BASE = 100;
     uint256 public constant MAX_SUPPLY = 10000; // Límite máximo de NFTs
 
-    // Minimums por tier (en MXN como wei - 1 MXN = 1e18 wei)
-    uint256 public constant MIN_BRONZE = 250 * 1e18;
-    uint256 public constant MIN_SILVER = 1000 * 1e18;
-    uint256 public constant MIN_GOLD = 5000 * 1e18;
-    uint256 public constant MIN_PLATINUM = 10000 * 1e18;
+    // Minimums por tier en USD (usando 18 decimales para consistencia)
+    // 1 USD = 1e18 wei en nuestra representación interna
+    uint256 public constant MIN_BRONZE = 0;               // Bronze es < $25 USD
+    uint256 public constant MIN_SILVER = 25 * 1e18;       // $25 USD
+    uint256 public constant MIN_GOLD = 250 * 1e18;       // $250 USD
+    uint256 public constant MIN_PLATINUM = 500 * 1e18;    // $500 USD
 
-    // Total stats (optimizado)
-    uint256 public totalInvestmentAmount;
-    uint256 public totalDistributed;
-    uint256 public activeNFTCount; // Contador optimizado en lugar de loop
+    // Total stats por tipo de token
+    mapping(PaymentToken => uint256) public totalInvestmentByToken;
+    mapping(PaymentToken => uint256) public totalDistributedByToken;
+    uint256 public activeNFTCount;
 
-    // Precio de mint público (en wei de ETH)
-    uint256 public pricePerUnit = 0.0033 ether / 100; // ~$10 USD por 100 MXN
+    // Precios mínimos de inversión por token
+    // ETH: 18 decimales
+    // USDC: 6 decimales en Scroll
+    // USDT: 6 decimales en Scroll
+    uint256 public minInvestmentETH = 0.004 ether;    // Mínimo 0.004 ETH (~$10 USD a $2500/ETH)
+    uint256 public minInvestmentUSDC = 10 * 1e6;      // Mínimo 10 USDC
+    uint256 public minInvestmentUSDT = 10 * 1e6;      // Mínimo 10 USDT
 
-    // Tokens ERC20 aceptados (Scroll Mainnet)
+    // Direcciones de tokens ERC20 (Scroll Mainnet)
     address public constant USDC = 0x06eFdBFf2a14a7c8E15944D1F4A48F9F95F663A4;
     address public constant USDT = 0xf55BEC9cafDbE8730f096Aa55dad6D22d44099Df;
 
-    // Precio por token (para 100 MXN)
-    // USDC y USDT tienen 6 decimales en Scroll
-    mapping(address => uint256) public tokenPricePerUnit;
     mapping(address => bool) public acceptedTokens;
 
     // Treasury con timelock
@@ -103,12 +125,18 @@ contract UrbanikaNFT is
     // Pausa independiente de minting
     bool public mintPaused = false;
 
+    // Oracle de precios Chainlink
+    AggregatorV3Interface public ethPriceFeed;
+    uint256 public constant PRICE_STALENESS_THRESHOLD = 3600; // 1 hora
+    uint256 public manualETHPrice = 2500 * 1e8; // Precio manual de respaldo ($2500 con 8 decimales)
+
     // ============ Events ============
 
     event NFTMinted(
         uint256 indexed tokenId,
         address indexed investor,
         uint256 investmentAmount,
+        PaymentToken paymentToken,
         InvestmentTier tier,
         uint256 expectedReturn
     );
@@ -116,13 +144,15 @@ contract UrbanikaNFT is
     event ReturnDistributed(
         uint256 indexed tokenId,
         uint256 amount,
+        PaymentToken paymentToken,
         uint256 totalReceived
     );
 
     event InvestmentCompleted(
         uint256 indexed tokenId,
         address indexed investor,
-        uint256 totalReturn
+        uint256 totalReturn,
+        PaymentToken paymentToken
     );
 
     event MetadataUpdated(
@@ -141,22 +171,27 @@ contract UrbanikaNFT is
         address indexed newTreasury
     );
 
-    event PricePerUnitUpdated(
-        uint256 oldPrice,
-        uint256 newPrice
+    event MinInvestmentUpdated(
+        PaymentToken indexed token,
+        uint256 oldMin,
+        uint256 newMin
     );
 
     event MintPauseToggled(bool isPaused);
 
-    event TokenPriceUpdated(
-        address indexed token,
-        uint256 oldPrice,
-        uint256 newPrice
-    );
-
     event TokenAcceptanceToggled(
         address indexed token,
         bool isAccepted
+    );
+
+    event PriceFeedUpdated(
+        address indexed oldFeed,
+        address indexed newFeed
+    );
+
+    event ManualPriceUpdated(
+        uint256 oldPrice,
+        uint256 newPrice
     );
 
     // ============ Modifiers ============
@@ -180,19 +215,15 @@ contract UrbanikaNFT is
         // Configurar tokens aceptados
         acceptedTokens[USDC] = true;
         acceptedTokens[USDT] = true;
-
-        // Precio inicial: $10 USD por 100 MXN
-        // USDC y USDT tienen 6 decimales en Scroll
-        tokenPricePerUnit[USDC] = 10 * 1e6;  // 10 USDC
-        tokenPricePerUnit[USDT] = 10 * 1e6;  // 10 USDT
     }
 
-    // ============ Public Functions ============
+    // ============ Minting Functions ============
 
     /**
      * @dev Acuña un nuevo NFT de inversión (solo owner - para pagos off-chain)
      * @param to Dirección del inversor
-     * @param investmentAmount Monto invertido (en wei MXN)
+     * @param investmentAmount Monto invertido (en wei del token correspondiente)
+     * @param paymentToken Token usado para el pago (ETH, USDC, USDT)
      * @param tokenURI URI del metadata en IPFS
      * @param investorEmail Email del inversor (se hasheará)
      * @return tokenId ID del NFT creado
@@ -200,12 +231,13 @@ contract UrbanikaNFT is
     function mint(
         address to,
         uint256 investmentAmount,
+        PaymentToken paymentToken,
         string memory tokenURI,
         string memory investorEmail
     ) public onlyOwner whenNotPaused whenMintNotPaused returns (uint256) {
         require(to != address(0), "Invalid address");
         require(_tokenIdCounter < MAX_SUPPLY, "Max supply reached");
-        require(investmentAmount >= MIN_BRONZE, "Amount below minimum");
+        require(_validateMinInvestment(investmentAmount, paymentToken), "Amount below minimum");
         require(bytes(tokenURI).length > 0, "Invalid token URI");
 
         // Verificar URI único
@@ -216,10 +248,11 @@ contract UrbanikaNFT is
         _tokenIdCounter++;
         uint256 tokenId = _tokenIdCounter;
 
-        // Calcular tier
-        InvestmentTier tier = _calculateTier(investmentAmount);
+        // Calcular tier basado en valor en USD (normalizado a 18 decimales)
+        uint256 normalizedAmount = _normalizeToUSD(investmentAmount, paymentToken);
+        InvestmentTier tier = _calculateTier(normalizedAmount);
 
-        // Calcular retorno esperado (1.5x)
+        // Calcular retorno esperado (1.5x en el token original)
         uint256 expectedReturn = (investmentAmount * RETURN_MULTIPLIER) / MULTIPLIER_BASE;
 
         // Hash del email para privacidad
@@ -232,13 +265,14 @@ contract UrbanikaNFT is
             currentReturn: 0,
             mintDate: block.timestamp,
             tier: tier,
+            paymentToken: paymentToken,
             isActive: true,
             investor: to,
             emailHash: emailHash
         });
 
         // Actualizar stats
-        totalInvestmentAmount += investmentAmount;
+        totalInvestmentByToken[paymentToken] += investmentAmount;
         activeNFTCount++;
 
         // Guardar relación inversor-token
@@ -248,15 +282,146 @@ contract UrbanikaNFT is
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, tokenURI);
 
-        emit NFTMinted(tokenId, to, investmentAmount, tier, expectedReturn);
+        emit NFTMinted(tokenId, to, investmentAmount, paymentToken, tier, expectedReturn);
 
         return tokenId;
     }
 
     /**
+     * @dev Mintea NFT con pago en ETH (público)
+     * @param tokenURI URI del metadata en IPFS
+     * @return tokenId ID del NFT creado
+     */
+    function publicMintWithETH(
+        string memory tokenURI
+    ) public payable whenNotPaused whenMintNotPaused nonReentrant returns (uint256) {
+        require(_tokenIdCounter < MAX_SUPPLY, "Max supply reached");
+        require(msg.value >= minInvestmentETH, "Amount below minimum");
+        require(bytes(tokenURI).length > 0, "Invalid token URI");
+
+        // Verificar URI único
+        bytes32 uriHash = keccak256(bytes(tokenURI));
+        require(!_usedURIs[uriHash], "URI already used");
+        _usedURIs[uriHash] = true;
+
+        _tokenIdCounter++;
+        uint256 tokenId = _tokenIdCounter;
+
+        uint256 investmentAmount = msg.value;
+
+        // Calcular tier
+        uint256 normalizedAmount = _normalizeToUSD(investmentAmount, PaymentToken.ETH);
+        InvestmentTier tier = _calculateTier(normalizedAmount);
+
+        // Calcular retorno esperado (1.5x)
+        uint256 expectedReturn = (investmentAmount * RETURN_MULTIPLIER) / MULTIPLIER_BASE;
+
+        // Crear investment (sin email en public mint)
+        investments[tokenId] = Investment({
+            investmentAmount: investmentAmount,
+            expectedReturn: expectedReturn,
+            currentReturn: 0,
+            mintDate: block.timestamp,
+            tier: tier,
+            paymentToken: PaymentToken.ETH,
+            isActive: true,
+            investor: msg.sender,
+            emailHash: bytes32(0)
+        });
+
+        // Actualizar stats
+        totalInvestmentByToken[PaymentToken.ETH] += investmentAmount;
+        activeNFTCount++;
+
+        // Guardar relación inversor-token
+        _investorTokens[msg.sender].push(tokenId);
+
+        // Mint NFT
+        _safeMint(msg.sender, tokenId);
+        _setTokenURI(tokenId, tokenURI);
+
+        emit NFTMinted(tokenId, msg.sender, investmentAmount, PaymentToken.ETH, tier, expectedReturn);
+
+        // Enviar fondos a treasury
+        (bool sent, ) = treasury.call{value: investmentAmount}("");
+        require(sent, "Failed to send ETH to treasury");
+
+        return tokenId;
+    }
+
+    /**
+     * @dev Mintea NFT con pago en USDC o USDT (público)
+     * @param amount Cantidad de tokens a pagar
+     * @param tokenURI URI del metadata en IPFS
+     * @param paymentTokenAddress Dirección del token ERC20 (USDC o USDT)
+     * @return tokenId ID del NFT creado
+     */
+    function publicMintWithToken(
+        uint256 amount,
+        string memory tokenURI,
+        address paymentTokenAddress
+    ) public whenNotPaused whenMintNotPaused nonReentrant returns (uint256) {
+        require(acceptedTokens[paymentTokenAddress], "Token not accepted");
+        require(_tokenIdCounter < MAX_SUPPLY, "Max supply reached");
+        require(bytes(tokenURI).length > 0, "Invalid token URI");
+
+        // Determinar tipo de token y validar monto mínimo
+        PaymentToken paymentToken = _getPaymentTokenType(paymentTokenAddress);
+        require(_validateMinInvestment(amount, paymentToken), "Amount below minimum");
+
+        // Verificar URI único
+        bytes32 uriHash = keccak256(bytes(tokenURI));
+        require(!_usedURIs[uriHash], "URI already used");
+        _usedURIs[uriHash] = true;
+
+        // Transferir tokens del comprador al treasury
+        IERC20(paymentTokenAddress).safeTransferFrom(msg.sender, treasury, amount);
+
+        _tokenIdCounter++;
+        uint256 tokenId = _tokenIdCounter;
+
+        // Calcular tier
+        uint256 normalizedAmount = _normalizeToUSD(amount, paymentToken);
+        InvestmentTier tier = _calculateTier(normalizedAmount);
+
+        // Calcular retorno esperado (1.5x)
+        uint256 expectedReturn = (amount * RETURN_MULTIPLIER) / MULTIPLIER_BASE;
+
+        // Crear investment
+        investments[tokenId] = Investment({
+            investmentAmount: amount,
+            expectedReturn: expectedReturn,
+            currentReturn: 0,
+            mintDate: block.timestamp,
+            tier: tier,
+            paymentToken: paymentToken,
+            isActive: true,
+            investor: msg.sender,
+            emailHash: bytes32(0)
+        });
+
+        // Actualizar stats
+        totalInvestmentByToken[paymentToken] += amount;
+        activeNFTCount++;
+
+        // Guardar relación inversor-token
+        _investorTokens[msg.sender].push(tokenId);
+
+        // Mint NFT
+        _safeMint(msg.sender, tokenId);
+        _setTokenURI(tokenId, tokenURI);
+
+        emit NFTMinted(tokenId, msg.sender, amount, paymentToken, tier, expectedReturn);
+
+        return tokenId;
+    }
+
+    // ============ Distribution Functions ============
+
+    /**
      * @dev Distribuye retornos a un NFT específico
      * @param tokenId ID del NFT
-     * @param amount Monto a distribuir
+     * @param amount Cantidad a distribuir (en el token original de inversión)
      */
     function distributeReturn(uint256 tokenId, uint256 amount)
         public
@@ -264,165 +429,249 @@ contract UrbanikaNFT is
         nonReentrant
     {
         require(_ownerOf(tokenId) != address(0), "Token does not exist");
-
         Investment storage investment = investments[tokenId];
         require(investment.isActive, "Investment not active");
-        require(investment.currentReturn < investment.expectedReturn, "Investment already completed");
+        require(amount > 0, "Amount must be greater than 0");
 
-        // Calcular cuánto se puede distribuir
-        uint256 remaining = investment.expectedReturn - investment.currentReturn;
-        uint256 toDistribute = amount > remaining ? remaining : amount;
+        uint256 remainingReturn = investment.expectedReturn - investment.currentReturn;
+        require(remainingReturn > 0, "Investment already completed");
 
-        investment.currentReturn += toDistribute;
-        totalDistributed += toDistribute;
+        uint256 amountToDistribute = amount > remainingReturn ? remainingReturn : amount;
 
-        emit ReturnDistributed(tokenId, toDistribute, investment.currentReturn);
+        // Validar que el contrato tenga fondos suficientes
+        if (investment.paymentToken == PaymentToken.ETH) {
+            require(address(this).balance >= amountToDistribute, "Insufficient ETH balance");
+        } else if (investment.paymentToken == PaymentToken.USDC) {
+            require(IERC20(USDC).balanceOf(address(this)) >= amountToDistribute, "Insufficient USDC balance");
+        } else if (investment.paymentToken == PaymentToken.USDT) {
+            require(IERC20(USDT).balanceOf(address(this)) >= amountToDistribute, "Insufficient USDT balance");
+        }
 
-        // Si alcanzó el objetivo, marcar como completado
+        // Actualizar retorno actual
+        investment.currentReturn += amountToDistribute;
+        totalDistributedByToken[investment.paymentToken] += amountToDistribute;
+
+        // Transferir fondos según el tipo de token
+        address investor = investment.investor;
+
+        if (investment.paymentToken == PaymentToken.ETH) {
+            (bool sent, ) = payable(investor).call{value: amountToDistribute}("");
+            require(sent, "Failed to send ETH");
+        } else if (investment.paymentToken == PaymentToken.USDC) {
+            IERC20(USDC).safeTransfer(investor, amountToDistribute);
+        } else if (investment.paymentToken == PaymentToken.USDT) {
+            IERC20(USDT).safeTransfer(investor, amountToDistribute);
+        }
+
+        emit ReturnDistributed(
+            tokenId, 
+            amountToDistribute, 
+            investment.paymentToken,
+            investment.currentReturn
+        );
+
+        // Si completó el retorno esperado, marcar como completado
         if (investment.currentReturn >= investment.expectedReturn) {
             investment.isActive = false;
             activeNFTCount--;
-            emit InvestmentCompleted(tokenId, investment.investor, investment.currentReturn);
+            emit InvestmentCompleted(
+                tokenId, 
+                investor, 
+                investment.currentReturn,
+                investment.paymentToken
+            );
         }
     }
 
     /**
-     * @dev Distribuye retornos a múltiples NFTs (batch)
+     * @dev Distribuye retornos a múltiples NFTs de forma proporcional
      * @param tokenIds Array de IDs de NFTs
-     * @param amounts Array de montos a distribuir
+     * @param totalAmount Cantidad total a distribuir
+     * @param paymentToken Token en el que se distribuirá
      */
-    function batchDistributeReturn(
-        uint256[] calldata tokenIds,
-        uint256[] calldata amounts
-    ) external onlyOwner {
-        require(tokenIds.length == amounts.length, "Arrays length mismatch");
+    function batchDistributeReturns(
+        uint256[] memory tokenIds,
+        uint256 totalAmount,
+        PaymentToken paymentToken
+    ) public onlyOwner nonReentrant {
+        require(tokenIds.length > 0, "Empty token array");
+        require(totalAmount > 0, "Amount must be greater than 0");
 
+        // Calcular total de retornos pendientes para estos NFTs (solo del mismo token)
+        uint256 totalPendingReturns = 0;
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            distributeReturn(tokenIds[i], amounts[i]);
+            Investment storage inv = investments[tokenIds[i]];
+            if (inv.isActive && inv.paymentToken == paymentToken) {
+                totalPendingReturns += (inv.expectedReturn - inv.currentReturn);
+            }
         }
-    }
 
-    /**
-     * @dev Actualiza el metadata URI de un NFT
-     * @param tokenId ID del NFT
-     * @param newTokenURI Nuevo URI del metadata
-     */
-    function updateTokenURI(uint256 tokenId, string memory newTokenURI)
-        public
-        onlyOwner
-    {
-        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        require(totalPendingReturns > 0, "No pending returns");
 
-        // Verificar que el nuevo URI no esté en uso
-        bytes32 uriHash = keccak256(bytes(newTokenURI));
-        require(!_usedURIs[uriHash], "URI already used");
-        _usedURIs[uriHash] = true;
+        // Distribuir proporcionalmente
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            Investment storage inv = investments[tokenIds[i]];
+            
+            if (!inv.isActive || inv.paymentToken != paymentToken) continue;
 
-        _setTokenURI(tokenId, newTokenURI);
-        emit MetadataUpdated(tokenId, newTokenURI);
+            uint256 pendingReturn = inv.expectedReturn - inv.currentReturn;
+            if (pendingReturn == 0) continue;
+
+            // Calcular proporción
+            uint256 distributionAmount = (totalAmount * pendingReturn) / totalPendingReturns;
+            
+            if (distributionAmount > 0) {
+                distributeReturn(tokenIds[i], distributionAmount);
+            }
+        }
     }
 
     // ============ View Functions ============
 
     /**
-     * @dev Obtiene información completa de una inversión
-     * @param tokenId ID del NFT
-     * @return investment Estructura de Investment
+     * @dev Obtiene información de una inversión
      */
-    function getInvestment(uint256 tokenId)
-        public
-        view
-        returns (Investment memory)
+    function getInvestment(uint256 tokenId) 
+        public 
+        view 
+        returns (Investment memory) 
     {
         require(_ownerOf(tokenId) != address(0), "Token does not exist");
         return investments[tokenId];
     }
 
     /**
-     * @dev Obtiene el progreso de retorno de un NFT
-     * @param tokenId ID del NFT
-     * @return percentage Porcentaje de retorno recibido (0-100)
-     */
-    function getReturnProgress(uint256 tokenId)
-        public
-        view
-        returns (uint256 percentage)
-    {
-        Investment memory investment = investments[tokenId];
-        if (investment.expectedReturn == 0) return 0;
-        return (investment.currentReturn * 100) / investment.expectedReturn;
-    }
-
-    /**
      * @dev Obtiene todos los NFTs de un inversor
-     * @param investor Dirección del inversor
-     * @return tokenIds Array de IDs de NFTs
      */
-    function getInvestorTokens(address investor)
-        public
-        view
-        returns (uint256[] memory)
+    function getInvestorTokens(address investor) 
+        public 
+        view 
+        returns (uint256[] memory) 
     {
         return _investorTokens[investor];
     }
 
     /**
-     * @dev Obtiene cuántos NFTs activos existen (optimizado)
-     * @return count Cantidad de NFTs activos
+     * @dev Obtiene el retorno pendiente de un NFT
      */
-    function getActiveNFTCount() public view returns (uint256) {
-        return activeNFTCount;
-    }
-
-    /**
-     * @dev Verifica si un email está registrado (compara hashes)
-     * @param email Email a verificar
-     * @param tokenId Token ID a comparar
-     * @return bool True si el hash coincide
-     */
-    function verifyEmail(string memory email, uint256 tokenId)
-        public
-        view
-        returns (bool)
+    function getPendingReturn(uint256 tokenId) 
+        public 
+        view 
+        returns (uint256) 
     {
         require(_ownerOf(tokenId) != address(0), "Token does not exist");
-        return investments[tokenId].emailHash == keccak256(bytes(email));
+        Investment memory investment = investments[tokenId];
+        return investment.expectedReturn - investment.currentReturn;
     }
 
     /**
-     * @dev Calcula el tier de inversión según el monto
-     * @param amount Monto de inversión
-     * @return tier Tier calculado
+     * @dev Obtiene estadísticas de un tipo de token
      */
-    function _calculateTier(uint256 amount)
-        internal
-        pure
-        returns (InvestmentTier)
+    function getTokenStats(PaymentToken token)
+        public
+        view
+        returns (uint256 totalInvested, uint256 totalDistributed)
     {
-        if (amount >= MIN_PLATINUM) return InvestmentTier.Platinum;
-        if (amount >= MIN_GOLD) return InvestmentTier.Gold;
-        if (amount >= MIN_SILVER) return InvestmentTier.Silver;
-        return InvestmentTier.Bronze;
+        return (
+            totalInvestmentByToken[token],
+            totalDistributedByToken[token]
+        );
+    }
+
+    /**
+     * @dev Obtiene el balance del contrato para un tipo de token
+     */
+    function getContractBalance(PaymentToken token)
+        public
+        view
+        returns (uint256)
+    {
+        if (token == PaymentToken.ETH) {
+            return address(this).balance;
+        } else if (token == PaymentToken.USDC) {
+            return IERC20(USDC).balanceOf(address(this));
+        } else if (token == PaymentToken.USDT) {
+            return IERC20(USDT).balanceOf(address(this));
+        }
+        return 0;
+    }
+
+    /**
+     * @dev Obtiene todos los NFTs activos
+     */
+    function getActiveNFTs() 
+        public 
+        view 
+        returns (uint256[] memory) 
+    {
+        uint256[] memory activeTokens = new uint256[](activeNFTCount);
+        uint256 currentIndex = 0;
+
+        for (uint256 i = 1; i <= _tokenIdCounter; i++) {
+            if (investments[i].isActive) {
+                activeTokens[currentIndex] = i;
+                currentIndex++;
+            }
+        }
+
+        return activeTokens;
     }
 
     // ============ Admin Functions ============
 
     /**
-     * @dev Pausa todas las operaciones del contrato
+     * @dev Actualiza el monto mínimo de inversión para un token
      */
-    function pause() public onlyOwner {
-        _pause();
+    function setMinInvestment(PaymentToken token, uint256 newMin) 
+        public 
+        onlyOwner 
+    {
+        require(newMin > 0, "Minimum must be greater than 0");
+        
+        uint256 oldMin;
+        
+        if (token == PaymentToken.ETH) {
+            oldMin = minInvestmentETH;
+            minInvestmentETH = newMin;
+        } else if (token == PaymentToken.USDC) {
+            oldMin = minInvestmentUSDC;
+            minInvestmentUSDC = newMin;
+        } else if (token == PaymentToken.USDT) {
+            oldMin = minInvestmentUSDT;
+            minInvestmentUSDT = newMin;
+        }
+
+        emit MinInvestmentUpdated(token, oldMin, newMin);
     }
 
     /**
-     * @dev Reanuda las operaciones del contrato
+     * @dev Actualiza el metadata de un NFT
      */
-    function unpause() public onlyOwner {
-        _unpause();
+    function updateTokenURI(uint256 tokenId, string memory newTokenURI) 
+        public 
+        onlyOwner 
+    {
+        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        require(bytes(newTokenURI).length > 0, "Invalid token URI");
+        
+        _setTokenURI(tokenId, newTokenURI);
+        emit MetadataUpdated(tokenId, newTokenURI);
     }
 
     /**
-     * @dev Pausa/despausa solo el minting
+     * @dev Activa/desactiva un token como método de pago
+     */
+    function setTokenAcceptance(address tokenAddress, bool isAccepted) 
+        public 
+        onlyOwner 
+    {
+        require(tokenAddress != address(0), "Invalid token address");
+        acceptedTokens[tokenAddress] = isAccepted;
+        emit TokenAcceptanceToggled(tokenAddress, isAccepted);
+    }
+
+    /**
+     * @dev Pausa/despausa el minting
      */
     function toggleMintPause() public onlyOwner {
         mintPaused = !mintPaused;
@@ -430,209 +679,26 @@ contract UrbanikaNFT is
     }
 
     /**
-     * @dev Mintea NFT con pago directo en ETH (público)
-     * @param investmentAmount Monto de inversión deseado (en wei MXN)
-     * @param tokenURI URI del metadata en IPFS
-     * @return tokenId ID del NFT creado
+     * @dev Pausa el contrato completo (emergencia)
      */
-    function publicMint(
-        uint256 investmentAmount,
-        string memory tokenURI
-    ) public payable whenNotPaused whenMintNotPaused nonReentrant returns (uint256) {
-        require(_tokenIdCounter < MAX_SUPPLY, "Max supply reached");
-        require(investmentAmount >= MIN_BRONZE, "Amount below minimum");
-        require(bytes(tokenURI).length > 0, "Invalid token URI");
-
-        // Verificar URI único
-        bytes32 uriHash = keccak256(bytes(tokenURI));
-        require(!_usedURIs[uriHash], "URI already used");
-        _usedURIs[uriHash] = true;
-
-        // Calcular precio requerido en ETH
-        uint256 requiredPayment = calculatePrice(investmentAmount);
-        require(msg.value >= requiredPayment, "Insufficient payment");
-
-        _tokenIdCounter++;
-        uint256 tokenId = _tokenIdCounter;
-
-        // Calcular tier
-        InvestmentTier tier = _calculateTier(investmentAmount);
-
-        // Calcular retorno esperado (1.5x)
-        uint256 expectedReturn = (investmentAmount * RETURN_MULTIPLIER) / MULTIPLIER_BASE;
-
-        // Crear investment (sin email en public mint)
-        investments[tokenId] = Investment({
-            investmentAmount: investmentAmount,
-            expectedReturn: expectedReturn,
-            currentReturn: 0,
-            mintDate: block.timestamp,
-            tier: tier,
-            isActive: true,
-            investor: msg.sender,
-            emailHash: bytes32(0) // Sin email hash en public mint
-        });
-
-        // Actualizar stats
-        totalInvestmentAmount += investmentAmount;
-        activeNFTCount++;
-
-        // Guardar relación inversor-token
-        _investorTokens[msg.sender].push(tokenId);
-
-        // Mint NFT
-        _safeMint(msg.sender, tokenId);
-        _setTokenURI(tokenId, tokenURI);
-
-        emit NFTMinted(tokenId, msg.sender, investmentAmount, tier, expectedReturn);
-
-        // Enviar fondos a treasury (multisig)
-        (bool sent, ) = treasury.call{value: requiredPayment}("");
-        require(sent, "Failed to send ETH to treasury");
-
-        // Devolver exceso de pago
-        if (msg.value > requiredPayment) {
-            (bool refunded, ) = payable(msg.sender).call{value: msg.value - requiredPayment}("");
-            require(refunded, "Failed to refund excess");
-        }
-
-        return tokenId;
+    function pause() public onlyOwner {
+        _pause();
     }
 
     /**
-     * @dev Mintea NFT con pago en USDC o USDT
-     * @param investmentAmount Monto de inversión deseado (en wei MXN)
-     * @param tokenURI URI del metadata en IPFS
-     * @param paymentToken Dirección del token ERC20 (USDC o USDT)
-     * @return tokenId ID del NFT creado
+     * @dev Despausa el contrato
      */
-    function publicMintWithToken(
-        uint256 investmentAmount,
-        string memory tokenURI,
-        address paymentToken
-    ) public whenNotPaused whenMintNotPaused nonReentrant returns (uint256) {
-        require(acceptedTokens[paymentToken], "Token not accepted");
-        require(_tokenIdCounter < MAX_SUPPLY, "Max supply reached");
-        require(investmentAmount >= MIN_BRONZE, "Amount below minimum");
-        require(bytes(tokenURI).length > 0, "Invalid token URI");
-
-        // Verificar URI único
-        bytes32 uriHash = keccak256(bytes(tokenURI));
-        require(!_usedURIs[uriHash], "URI already used");
-        _usedURIs[uriHash] = true;
-
-        // Calcular precio requerido en el token
-        uint256 requiredPayment = calculatePriceInToken(investmentAmount, paymentToken);
-
-        // Transferir tokens del comprador al treasury
-        IERC20(paymentToken).safeTransferFrom(msg.sender, treasury, requiredPayment);
-
-        _tokenIdCounter++;
-        uint256 tokenId = _tokenIdCounter;
-
-        // Calcular tier
-        InvestmentTier tier = _calculateTier(investmentAmount);
-
-        // Calcular retorno esperado (1.5x)
-        uint256 expectedReturn = (investmentAmount * RETURN_MULTIPLIER) / MULTIPLIER_BASE;
-
-        // Crear investment (sin email en public mint)
-        investments[tokenId] = Investment({
-            investmentAmount: investmentAmount,
-            expectedReturn: expectedReturn,
-            currentReturn: 0,
-            mintDate: block.timestamp,
-            tier: tier,
-            isActive: true,
-            investor: msg.sender,
-            emailHash: bytes32(0) // Sin email hash en public mint
-        });
-
-        // Actualizar stats
-        totalInvestmentAmount += investmentAmount;
-        activeNFTCount++;
-
-        // Guardar relación inversor-token
-        _investorTokens[msg.sender].push(tokenId);
-
-        // Mint NFT
-        _safeMint(msg.sender, tokenId);
-        _setTokenURI(tokenId, tokenURI);
-
-        emit NFTMinted(tokenId, msg.sender, investmentAmount, tier, expectedReturn);
-
-        return tokenId;
-    }
-
-    /**
-     * @dev Calcula el precio en ETH para un monto de inversión
-     * @param investmentAmount Monto de inversión en wei MXN
-     * @return price Precio en wei ETH
-     */
-    function calculatePrice(uint256 investmentAmount) public view returns (uint256) {
-        // investmentAmount está en wei (1 MXN = 1e18)
-        // Convertir a unidades de 100 MXN
-        uint256 units = investmentAmount / (100 * 1e18);
-        return units * pricePerUnit;
-    }
-
-    /**
-     * @dev Calcula el precio en un token ERC20 específico
-     * @param investmentAmount Monto de inversión en wei MXN
-     * @param tokenAddress Dirección del token (USDC o USDT)
-     * @return price Precio en unidades del token
-     */
-    function calculatePriceInToken(
-        uint256 investmentAmount,
-        address tokenAddress
-    ) public view returns (uint256) {
-        require(acceptedTokens[tokenAddress], "Token not accepted");
-        // investmentAmount está en wei (1 MXN = 1e18)
-        // Convertir a unidades de 100 MXN
-        uint256 units = investmentAmount / (100 * 1e18);
-        return units * tokenPricePerUnit[tokenAddress];
-    }
-
-    /**
-     * @dev Actualiza el precio por unidad en ETH (solo owner)
-     * @param newPrice Nuevo precio en wei ETH por 100 MXN
-     */
-    function setPricePerUnit(uint256 newPrice) public onlyOwner {
-        require(newPrice > 0, "Price must be greater than 0");
-        uint256 oldPrice = pricePerUnit;
-        pricePerUnit = newPrice;
-        emit PricePerUnitUpdated(oldPrice, newPrice);
-    }
-
-    /**
-     * @dev Actualiza el precio de un token ERC20 (solo owner)
-     * @param tokenAddress Dirección del token
-     * @param newPrice Nuevo precio por 100 MXN
-     */
-    function setTokenPrice(address tokenAddress, uint256 newPrice) public onlyOwner {
-        require(acceptedTokens[tokenAddress], "Token not accepted");
-        require(newPrice > 0, "Price must be greater than 0");
-        uint256 oldPrice = tokenPricePerUnit[tokenAddress];
-        tokenPricePerUnit[tokenAddress] = newPrice;
-        emit TokenPriceUpdated(tokenAddress, oldPrice, newPrice);
-    }
-
-    /**
-     * @dev Activa/desactiva un token como método de pago (solo owner)
-     * @param tokenAddress Dirección del token
-     * @param isAccepted True para aceptar, false para rechazar
-     */
-    function setTokenAcceptance(address tokenAddress, bool isAccepted) public onlyOwner {
-        require(tokenAddress != address(0), "Invalid token address");
-        acceptedTokens[tokenAddress] = isAccepted;
-        emit TokenAcceptanceToggled(tokenAddress, isAccepted);
+    function unpause() public onlyOwner {
+        _unpause();
     }
 
     /**
      * @dev Propone cambio de treasury (paso 1 - con timelock)
-     * @param newTreasury Nueva dirección del treasury
      */
-    function proposeTreasuryChange(address payable newTreasury) public onlyOwner {
+    function proposeTreasuryChange(address payable newTreasury) 
+        public 
+        onlyOwner 
+    {
         require(newTreasury != address(0), "Invalid treasury address");
         require(newTreasury != treasury, "Same as current treasury");
 
@@ -662,25 +728,153 @@ contract UrbanikaNFT is
      */
     function cancelTreasuryChange() public onlyOwner {
         require(pendingTreasury != address(0), "No pending treasury change");
-
         pendingTreasury = payable(address(0));
         treasuryChangeTimestamp = 0;
     }
 
     /**
-     * @dev Retira fondos del contrato (solo si hay balance residual)
+     * @dev Configura el Price Feed de Chainlink para ETH/USD
      */
-    function withdraw() public onlyOwner {
+    function setPriceFeed(address _priceFeed) public onlyOwner {
+        address oldFeed = address(ethPriceFeed);
+        ethPriceFeed = AggregatorV3Interface(_priceFeed);
+        emit PriceFeedUpdated(oldFeed, _priceFeed);
+    }
+
+    /**
+     * @dev Actualiza el precio manual de ETH (respaldo si falla oracle)
+     * @param newPrice Precio en USD con 8 decimales (ej: 2500_00000000 = $2500)
+     */
+    function setManualETHPrice(uint256 newPrice) public onlyOwner {
+        require(newPrice > 0, "Price must be greater than 0");
+        require(newPrice < 1000000 * 1e8, "Price seems incorrect"); // Max $1M por ETH
+        uint256 oldPrice = manualETHPrice;
+        manualETHPrice = newPrice;
+        emit ManualPriceUpdated(oldPrice, newPrice);
+    }
+
+    /**
+     * @dev Retira ETH del contrato (solo owner)
+     */
+    function withdrawETH() public onlyOwner {
         uint256 balance = address(this).balance;
-        require(balance > 0, "No balance to withdraw");
+        require(balance > 0, "No ETH balance");
         (bool sent, ) = treasury.call{value: balance}("");
         require(sent, "Failed to send ETH");
+    }
+
+    /**
+     * @dev Retira tokens ERC20 del contrato (solo owner)
+     */
+    function withdrawTokens(address tokenAddress) public onlyOwner {
+        require(tokenAddress != address(0), "Invalid token address");
+        uint256 balance = IERC20(tokenAddress).balanceOf(address(this));
+        require(balance > 0, "No token balance");
+        IERC20(tokenAddress).safeTransfer(treasury, balance);
     }
 
     /**
      * @dev Permite recibir ETH en el contrato
      */
     receive() external payable {}
+
+    // ============ Internal Functions ============
+
+    /**
+     * @dev Calcula el tier basado en el monto normalizado a USD
+     */
+    function _calculateTier(uint256 normalizedAmount) 
+        internal 
+        pure 
+        returns (InvestmentTier) 
+    {
+        if (normalizedAmount >= MIN_PLATINUM) return InvestmentTier.Platinum;
+        if (normalizedAmount >= MIN_GOLD) return InvestmentTier.Gold;
+        if (normalizedAmount >= MIN_SILVER) return InvestmentTier.Silver;
+        return InvestmentTier.Bronze;
+    }
+
+    /**
+     * @dev Obtiene el precio de ETH en USD de forma segura
+     * @return price Precio de ETH en USD con 18 decimales
+     */
+    function getETHPriceUSD() public view returns (uint256 price) {
+        if (address(ethPriceFeed) != address(0)) {
+            try ethPriceFeed.latestRoundData() returns (
+                uint80,
+                int256 priceInt,
+                uint256,
+                uint256 updatedAt,
+                uint80
+            ) {
+                // Verificar que el precio es válido y no está obsoleto
+                if (priceInt > 0 && block.timestamp - updatedAt <= PRICE_STALENESS_THRESHOLD) {
+                    // Chainlink devuelve precio con 8 decimales, convertir a 18
+                    return uint256(priceInt) * 1e10;
+                }
+            } catch {
+                // Si falla el oracle, usar precio manual
+            }
+        }
+        // Usar precio manual de respaldo (convertir de 8 a 18 decimales)
+        return manualETHPrice * 1e10;
+    }
+
+    /**
+     * @dev Normaliza el monto a USD con 18 decimales para comparación
+     * Usa Oracle de Chainlink para ETH, asume $1 para stablecoins
+     */
+    function _normalizeToUSD(uint256 amount, PaymentToken token)
+        internal
+        view
+        returns (uint256)
+    {
+        if (token == PaymentToken.ETH) {
+            // amount está en wei (18 decimales)
+            // ethPrice está en 18 decimales
+            // Resultado debe estar en 18 decimales
+            uint256 ethPrice = getETHPriceUSD();
+            return (amount * ethPrice) / 1e18;
+        } else if (token == PaymentToken.USDC || token == PaymentToken.USDT) {
+            // USDC/USDT tienen 6 decimales, convertir a 18 decimales
+            return amount * 1e12;
+        }
+        return 0;
+    }
+
+    /**
+     * @dev Valida el monto mínimo de inversión según el token
+     */
+    function _validateMinInvestment(uint256 amount, PaymentToken token) 
+        internal 
+        view 
+        returns (bool) 
+    {
+        if (token == PaymentToken.ETH) {
+            return amount >= minInvestmentETH;
+        } else if (token == PaymentToken.USDC) {
+            return amount >= minInvestmentUSDC;
+        } else if (token == PaymentToken.USDT) {
+            return amount >= minInvestmentUSDT;
+        }
+        return false;
+    }
+
+    /**
+     * @dev Obtiene el tipo de PaymentToken desde una dirección
+     */
+    function _getPaymentTokenType(address tokenAddress) 
+        internal 
+        pure 
+        returns (PaymentToken) 
+    {
+        if (tokenAddress == USDC) {
+            return PaymentToken.USDC;
+        } else if (tokenAddress == USDT) {
+            return PaymentToken.USDT;
+        }
+        revert("Invalid token address");
+    }
 
     // ============ Required Overrides ============
 

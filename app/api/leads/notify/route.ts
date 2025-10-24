@@ -1,16 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { protectedApiRoute } from '@/lib/auth/middleware'
 // DESACTIVADO: Email functionality temporalmente deshabilitado
 // import { sendWelcomeEmail, sendNFTReadyEmail, sendPaymentReminderEmail } from '@/lib/email'
 
 /**
- * API para enviar notificaciones por email a leads
+ * API para enviar notificaciones por email a leads (Protected)
  * TEMPORALMENTE DESACTIVADO - Email functionality será implementado en el futuro
  *
  * POST /api/leads/notify
+ * Headers: x-api-key (required)
  * Body: { leadId: string, type: 'welcome' | 'nft_ready' | 'reminder', data?: any }
  */
 export async function POST(request: NextRequest) {
+  // Verificar autenticación - este endpoint modifica datos, debe estar protegido
+  const { authorized, response } = await protectedApiRoute(request, {
+    requireApiKey: true // Siempre requerir API key
+  })
+
+  if (!authorized) {
+    return response!
+  }
+
   try {
     const { leadId, type, data } = await request.json()
 
@@ -34,8 +45,6 @@ export async function POST(request: NextRequest) {
     }
 
     // DESACTIVADO: Email sending temporalmente deshabilitado
-    console.log(`📧 Email notifications disabled (testing mode) - Would send ${type} email to ${lead.email}`)
-
     // Mock success response
     const result: { success: boolean; error?: string } = { success: true }
 
@@ -86,8 +95,6 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      console.log(`✅ Email (mock) enviado al lead ${leadId} (${type})`)
-
       return NextResponse.json({
         success: true,
         message: 'Email enviado exitosamente (modo testing)',
@@ -95,15 +102,15 @@ export async function POST(request: NextRequest) {
         type,
       })
     } else {
-      console.error(`❌ Error enviando email al lead ${leadId}:`, result.error)
-
       return NextResponse.json(
         { error: result.error || 'Error enviando email' },
         { status: 500 }
       )
     }
   } catch (error) {
-    console.error('❌ Error en /api/leads/notify:', error)
+    if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") { console.error('Error en /api/leads/notify:', error) }
+    }
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }
@@ -113,9 +120,19 @@ export async function POST(request: NextRequest) {
 
 /**
  * GET /api/leads/notify?leadId=xxx
- * Obtener información del lead y emails enviados
+ * Obtener información del lead y emails enviados (Protected)
+ * Headers: x-api-key (required)
  */
 export async function GET(request: NextRequest) {
+  // Verificar autenticación
+  const { authorized, response } = await protectedApiRoute(request, {
+    requireApiKey: true
+  })
+
+  if (!authorized) {
+    return response!
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams
     const leadId = searchParams.get('leadId')
@@ -153,7 +170,9 @@ export async function GET(request: NextRequest) {
       lead,
     })
   } catch (error) {
-    console.error('❌ Error obteniendo lead:', error)
+    if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") { console.error('Error obteniendo lead:', error) }
+    }
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

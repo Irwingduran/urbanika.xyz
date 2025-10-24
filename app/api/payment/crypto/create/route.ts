@@ -18,15 +18,6 @@ export async function POST(request: NextRequest) {
     // - NOWPayments: https://nowpayments.io/
     // - BTCPay Server: https://btcpayserver.org/
 
-    console.warn('⚠️ Crypto payment no está configurado - usando modo demo')
-
-    console.log('Intento de pago crypto:', {
-      amountMXN: data.amountMXN,
-      cryptocurrency: data.cryptocurrency,
-      email: data.email,
-      metadata: data.metadata,
-    })
-
     // Conversión aproximada MXN -> USD -> Crypto (Scroll Mainnet)
     const MXN_TO_USD = 0.054283
     const amountUSD = data.amountMXN * MXN_TO_USD
@@ -49,14 +40,6 @@ export async function POST(request: NextRequest) {
         cryptoSymbol = data.cryptocurrency
     }
 
-    console.log('Pago crypto en Scroll Mainnet:', {
-      amountMXN: data.amountMXN,
-      amountUSD: amountUSD.toFixed(2),
-      amountCrypto: amountCrypto.toFixed(6),
-      cryptocurrency: cryptoSymbol,
-      network: 'Scroll Mainnet',
-    })
-
     // Mock data - en producción esto vendría del procesador de pagos
     const paymentId = `crypto_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
@@ -71,7 +54,7 @@ export async function POST(request: NextRequest) {
     }, { status: 503 })
 
   } catch (error) {
-    console.error('Error creando pago crypto:', error)
+    if (process.env.NODE_ENV === "development") { console.error('Error creando pago crypto:', error) }
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

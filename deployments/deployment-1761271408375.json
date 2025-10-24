@@ -1,0 +1,23 @@
+{
+  "contract": "UrbanikaNFT",
+  "version": "2.0.2",
+  "network": "scroll",
+  "address": "0xB7DECf6d81EBE13F9b2B485a88a3aaeA40A7Afc0",
+  "deployer": "0x62b02BF04825d73FA911cbb8A8FCD22f3C046933",
+  "treasury": "0x62b02BF04825d73FA911cbb8A8FCD22f3C046933",
+  "oracle": "0x6bF14CB0A831078629D993FDeBcB182b21A8774C",
+  "deploymentDate": "2025-10-24T02:03:28.374Z",
+  "txHash": "0x23c0e63bb217df69da9fb919fbac3c71cdad8b8169985a1cb29b5c3dae1e5e9c",
+  "features": [
+    "Chainlink Oracle ETH/USD",
+    "Fund validation",
+    "New investment tiers",
+    "Manual price fallback"
+  ],
+  "tiers": {
+    "bronze": "< $25",
+    "silver": "$25 - $250",
+    "gold": "$250 - $500",
+    "platinum": ">= $500"
+  }
+}

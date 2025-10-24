@@ -19,7 +19,6 @@ export async function POST(request: NextRequest) {
 
     if (!STRIPE_SECRET_KEY) {
       // Si no hay Stripe configurado, mostrar "próximamente"
-      console.warn('⚠️ STRIPE_SECRET_KEY no configurada - mostrando "próximamente"')
 
       return NextResponse.json({
         success: false,
@@ -63,19 +62,13 @@ export async function POST(request: NextRequest) {
     //   sessionId: session.id,
     // })
 
-    console.log('Intento de pago con Stripe:', {
-      amount: data.amount,
-      email: data.email,
-      metadata: data.metadata,
-    })
-
     return NextResponse.json({
       success: false,
       error: 'Pagos con tarjeta: Próximamente disponible. Por favor intenta más tarde o contáctanos.',
     }, { status: 503 })
 
   } catch (error) {
-    console.error('Error creando checkout de Stripe:', error)
+    if (process.env.NODE_ENV === "development") { console.error('Error creando checkout de Stripe:', error) }
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

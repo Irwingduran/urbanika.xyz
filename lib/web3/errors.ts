@@ -162,15 +162,6 @@ export function parseWeb3Error(error: any): ParsedError {
 export function logWeb3Error(error: any, context?: string) {
   const parsed = parseWeb3Error(error)
 
-  console.error('🚨 Web3 Error:', {
-    context,
-    type: parsed.type,
-    title: parsed.title,
-    message: parsed.message,
-    technicalDetails: parsed.technicalDetails,
-    originalError: error,
-  })
-
   // Aquí puedes agregar analytics (Sentry, Mixpanel, etc.)
   // Example: Sentry.captureException(error, { tags: { type: parsed.type } })
 }

@@ -1,7 +1,11 @@
 /**
- * API Route: Upload NFT to IPFS
+ * API Route: Upload NFT to IPFS (Protected)
  *
  * POST /api/ipfs/upload
+ *
+ * Headers:
+ * - x-api-key: string (required in production)
+ * - x-csrf-token: string (for same-origin requests)
  *
  * Body:
  * - tokenId: number
@@ -13,10 +17,21 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createNFTOnIPFS, urlToFile } from '@/lib/ipfs/pinata'
+import { protectedApiRoute } from '@/lib/auth/middleware'
 import fs from 'fs/promises'
 import path from 'path'
 
 export async function POST(request: NextRequest) {
+  // Verificar autenticación y rate limiting
+  const { authorized, response } = await protectedApiRoute(request, {
+    rateLimit: { maxRequests: 10, windowMs: 60000 }, // 10 requests por minuto
+    requireApiKey: process.env.NODE_ENV === 'production'
+  })
+
+  if (!authorized) {
+    return response!
+  }
+
   try {
     const body = await request.json()
     const { tokenId, investmentAmount, expectedReturn, investor, useDefaultImage = true } = body
@@ -53,8 +68,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Crear NFT en IPFS usando la imagen pre-subida
-    console.log(`🚀 Creating NFT #${tokenId} on IPFS for ${investor}`)
-
     // Si hay imagen pre-subida en .env, usarla (más rápido y eficiente)
     const usePreUploaded = !!process.env.NEXT_PUBLIC_NFT_BASE_IMAGE_IPFS
 
@@ -84,8 +97,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`✅ NFT #${tokenId} created successfully on IPFS`)
-
     return NextResponse.json({
       success: true,
       tokenURI: result.tokenURI,
@@ -94,7 +105,11 @@ export async function POST(request: NextRequest) {
       gatewayUrl: result.gatewayUrl,
     })
   } catch (error: any) {
-    console.error('❌ Error in IPFS upload API:', error)
+    // Log errors solo en desarrollo
+    if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") { console.error('Error in IPFS upload API:', error) }
+    }
+
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }

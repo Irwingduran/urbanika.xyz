@@ -55,11 +55,9 @@ export async function captureEmail(data: LeadData): Promise<EmailCaptureResult> 
         }),
       });
     } catch (emailError) {
-      console.error("Failed to send welcome email:", emailError);
       // Don't fail the whole operation if email fails
     }
     */
-    // console.log('📧 Email notifications disabled (testing mode)')
 
     // Also send to email marketing service (Mailchimp, SendGrid, etc.)
     await addToEmailList({
@@ -136,7 +134,6 @@ async function addToEmailList(data: {
       body: JSON.stringify(data),
     });
   } catch (error) {
-    console.error("Failed to add to email list:", error);
     // Don't throw - email capture is more important than list addition
   }
 }
@@ -166,7 +163,6 @@ export function saveLeadToLocalStorage(data: Partial<LeadData>): void {
       })
     );
   } catch (error) {
-    console.error("Failed to save to localStorage:", error);
   }
 }
 
@@ -189,6 +185,5 @@ export function clearLeadFromLocalStorage(): void {
   try {
     localStorage.removeItem("urbanika_lead");
   } catch (error) {
-    console.error("Failed to clear localStorage:", error);
   }
 }

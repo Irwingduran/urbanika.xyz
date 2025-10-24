@@ -4,6 +4,7 @@ import SocialMediaButtons from '@/components/social-media-buttons'
 import { Web3Provider } from '@/lib/web3/providers'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { ClientErrorHandler } from './client-error-handler'
 
 export const metadata: Metadata = {
   title: 'Urbánika - Invierte en Casas Regenerativas con NFTs',
@@ -70,6 +71,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
+        <ClientErrorHandler />
         <Web3Provider>
           {children}
           <SocialMediaButtons />

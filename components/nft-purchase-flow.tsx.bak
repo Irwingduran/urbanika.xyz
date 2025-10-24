@@ -156,7 +156,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
             mintTxHash: hash,
             tokenId: null, // Se puede obtener del evento del contrato si es necesario
           }),
-        }).catch(() => {})
+        }).catch(err => console.error('Error actualizando lead:', err))
       }
     }
   }, [isSuccess, hash, isPending, isConfirming, isTransactionError, transactionStatus, investmentAmount, chain?.id, leadId, step])
@@ -176,6 +176,12 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
   // Handle transaction failures (when transaction is mined but reverted)
   useEffect(() => {
     if (isTransactionError && hash) {
+      console.error('❌ Transaction FAILED on blockchain:', {
+        hash,
+        error: transactionError,
+        status: transactionStatus
+      })
+
       const parsed = parseTransactionError(transactionError)
       const steps = getTroubleshootingSteps(parsed.type)
 
@@ -190,6 +196,13 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
       if (steps.length > 0) {
         errorMessage += '\n\nQué hacer:\n' + steps.map((step, i) => `${i + 1}. ${step}`).join('\n')
       }
+
+      console.error('📋 Error details:', {
+        type: parsed.type,
+        userMessage: parsed.userMessage,
+        technicalDetails: parsed.technicalDetails,
+        troubleshootingSteps: steps
+      })
 
       trackNFTMintFailed(investmentAmount, parsed.type, parsed.userMessage)
       setError(errorMessage)
@@ -276,7 +289,10 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
   useEffect(() => {
     if (selectedToken !== 'ETH' && tokenPriceData && tokenAllowance !== undefined) {
       const needsApprovalCheck = tokenAllowance < tokenPriceData
-      // //   tokenPriceData: tokenPriceData.toString(),
+      // console.log('🔍 Approval Check:', {
+      //   selectedToken,
+      //   tokenAllowance: tokenAllowance.toString(),
+      //   tokenPriceData: tokenPriceData.toString(),
       //   needsApproval: needsApprovalCheck
       // })
       setNeedsApproval(needsApprovalCheck)
@@ -287,7 +303,10 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
 
   // Handle ERC20 approval
   const handleApproveToken = async () => {
+    // console.log('🎯 handleApproveToken called')
+
     if (!tokenPriceData) {
+      console.error('❌ No tokenPriceData available')
       setError("Error calculando el precio del token")
       return
     }
@@ -296,8 +315,17 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
       const tokenDecimals = TOKENS[selectedToken].decimals
       const amountToApprove = formatUnits(tokenPriceData, tokenDecimals)
 
+      // console.log('💰 Approving token:', {
+      //   token: selectedToken,
+      //   amount: amountToApprove,
+      //   decimals: tokenDecimals,
+      //   rawAmount: tokenPriceData.toString()
+      // })
+
       await approve(amountToApprove, tokenDecimals)
+      // console.log('✅ Approval transaction sent')
     } catch (err: any) {
+      console.error('❌ Approval failed:', err)
       logWeb3Error(err, 'Token Approval')
       const parsed = parseWeb3Error(err)
       setError(parsed.message)
@@ -305,13 +333,17 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
   }
 
   const handleCryptoPayment = async () => {
-    // + '...',
+    // console.log('🚀 handleCryptoPayment called', {
+    //   selectedToken,
+    //   isConnected,
+    //   address: address?.slice(0, 10) + '...',
     //   chainId: chain?.id,
     //   needsApproval
     // })
 
     // Verificar que la wallet esté conectada
     if (!isConnected || !address) {
+      console.error('❌ Wallet not connected')
       setError("Por favor conecta tu wallet primero")
       setStep("error")
       return
@@ -319,6 +351,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
 
     // Verificar que esté en la red correcta (Scroll Mainnet)
     if (chain?.id !== 534352) {
+      console.error('❌ Wrong network:', chain?.id)
       setError("Por favor cambia a la red Scroll Mainnet en tu wallet")
       setStep("error")
       return
@@ -326,11 +359,15 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
 
     // Verificar precio según el token seleccionado
     const currentPrice = selectedToken === 'ETH' ? priceData : tokenPriceData
-    // //   tokenPriceData: tokenPriceData?.toString(),
+    // console.log('💵 Current price:', {
+    //   selectedToken,
+    //   priceData: priceData?.toString(),
+    //   tokenPriceData: tokenPriceData?.toString(),
     //   currentPrice: currentPrice?.toString()
     // })
 
     if (!currentPrice) {
+      console.error('❌ No price available')
       setError("Error calculando el precio. Por favor intenta de nuevo.")
       setStep("error")
       return
@@ -338,11 +375,13 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
 
     // Para tokens ERC20, verificar que haya suficiente allowance
     if (selectedToken !== 'ETH' && needsApproval) {
+      console.error('❌ Needs approval first')
       setError("Por favor aprueba el gasto del token primero")
       return
     }
 
-    // trackNFTMintInitiated(investmentAmount, 'crypto')
+    // console.log('✅ All validations passed, starting mint process')
+    trackNFTMintInitiated(investmentAmount, 'crypto')
     setProcessing(true)
     setStep("processing")
     setError("")
@@ -352,6 +391,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
       const tempTokenId = Date.now()
 
       // 2. Subir imagen + metadata a IPFS
+      console.log('📤 Subiendo NFT a IPFS...')
       const ipfsResponse = await fetch('/api/ipfs/upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -370,8 +410,11 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
         throw new Error(ipfsData.error || 'Error subiendo a IPFS')
       }
 
+      console.log('✅ NFT subido a IPFS:', ipfsData.tokenURI)
+
       // 3. Mintear NFT según el token seleccionado
       if (selectedToken === 'ETH') {
+        console.log('💎 Minting with ETH')
         // Pago en ETH (nativo)
         await mintNFT({
           investmentAmount,
@@ -379,6 +422,11 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
           priceInWei: priceData!, // Usar precio en ETH
         })
       } else {
+        console.log('💰 Minting with ERC20:', selectedToken)
+        console.log('📍 Token address:', selectedTokenAddress)
+        console.log('📝 Token URI:', ipfsData.tokenURI)
+        console.log('💵 Investment amount:', investmentAmount)
+
         // CRITICAL: Verificar balance y allowance ANTES de mintear
         const tokenDecimals = TOKENS[selectedToken].decimals
         const priceRequired = tokenPriceData!
@@ -386,17 +434,33 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
         const allowanceFormatted = tokenAllowance ? formatUnits(tokenAllowance, tokenDecimals) : '0'
         const priceFormatted = formatUnits(priceRequired, tokenDecimals)
 
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+        console.log('🔍 PRE-MINT VERIFICATION:')
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+        console.log(`💰 Tu balance de ${selectedToken}:`, balanceFormatted)
+        console.log(`✅ Allowance aprobado:`, allowanceFormatted)
+        console.log(`💸 Precio requerido:`, priceFormatted)
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+
         const balanceNum = parseFloat(balanceFormatted)
         const allowanceNum = parseFloat(allowanceFormatted)
         const priceNum = parseFloat(priceFormatted)
 
         if (balanceNum < priceNum) {
+          console.error('❌ INSUFFICIENT BALANCE!')
+          console.error(`   Tienes: ${balanceFormatted} ${selectedToken}`)
+          console.error(`   Necesitas: ${priceFormatted} ${selectedToken}`)
           throw new Error(`Balance insuficiente. Necesitas ${priceFormatted} ${selectedToken} pero solo tienes ${balanceFormatted}`)
         }
 
         if (allowanceNum < priceNum) {
+          console.error('❌ INSUFFICIENT ALLOWANCE!')
+          console.error(`   Aprobado: ${allowanceFormatted} ${selectedToken}`)
+          console.error(`   Necesitas: ${priceFormatted} ${selectedToken}`)
           throw new Error(`Allowance insuficiente. Por favor aprueba ${priceFormatted} ${selectedToken} o más.`)
         }
+
+        console.log('✅ Balance y allowance verificados - procediendo con mint...')
 
         // Pago en ERC20 (USDC/USDT)
         await mintNFTWithToken({
@@ -406,8 +470,10 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
         })
       }
 
+      console.log('✅ Mint transaction sent')
       // El éxito se maneja en el useEffect
     } catch (err: any) {
+      console.error('❌ Crypto payment failed:', err)
       logWeb3Error(err, 'Crypto Payment')
       const parsed = parseWeb3Error(err)
       setError(parsed.message)

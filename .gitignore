@@ -40,4 +40,33 @@ cache/
 artifacts/
 typechain-types/
 
+# Development scripts (no incluir en producción)
+hardhat.config.js
+
+# Scripts de deployment (ya ejecutados)
+scripts/deploy.js
+scripts/deploy-v2.js
+scripts/verify-deployment.js
+scripts/verify-new-contract.js
+
+# Scripts de configuración (ya configurados)
+scripts/configure-oracle.js
+scripts/test-oracle.js
+scripts/upload-nft-image.ts
+
+# Scripts de testing y debugging
+scripts/mint-example.ts
+scripts/create-test-lead.js
+scripts/debug-production.js
+scripts/test-production.js
+scripts/migrate-nfts.js
+
+# Scripts duplicados
+scripts/check-balance.ts
+scripts/create-wallet.ts
+
+# Scripts temporales de limpieza
+scripts/clean-console-logs.js
+scripts/clean-console-logs.sh
+
 /lib/generated/prisma

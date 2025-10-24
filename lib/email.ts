@@ -36,7 +36,6 @@ export async function sendEmail({
 }: SendEmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     if (!process.env.RESEND_API_KEY) {
-      console.warn('⚠️ RESEND_API_KEY no está configurado. Email no enviado.')
       return {
         success: false,
         error: 'RESEND_API_KEY no configurado',
@@ -53,25 +52,17 @@ export async function sendEmail({
     })
 
     if (error) {
-      console.error('❌ Error enviando email:', error)
       return {
         success: false,
         error: error.message,
       }
     }
 
-    console.log(`✅ Email enviado (${type || 'generic'}):`, {
-      to,
-      subject,
-      messageId: data?.id,
-    })
-
     return {
       success: true,
       messageId: data?.id,
     }
   } catch (error) {
-    console.error('❌ Error crítico enviando email:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Error desconocido',

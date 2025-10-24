@@ -53,19 +53,12 @@ export async function uploadFileToIPFS(file: File): Promise<{
     const ipfsUrl = `ipfs://${ipfsHash}`
     const gatewayUrl = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`
 
-    console.log('✅ Archivo subido a IPFS:', {
-      ipfsUrl,
-      gatewayUrl,
-      hash: ipfsHash,
-    })
-
     return {
       success: true,
       ipfsUrl,
       ipfsHash,
     }
   } catch (error: any) {
-    console.error('❌ Error subiendo archivo a IPFS:', error)
     return {
       success: false,
       error: error.message || 'Error desconocido',
@@ -107,12 +100,6 @@ export async function uploadMetadataToIPFS(
     const ipfsUrl = `ipfs://${ipfsHash}`
     const gatewayUrl = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`
 
-    console.log('✅ Metadata subida a IPFS:', {
-      ipfsUrl,
-      gatewayUrl,
-      hash: ipfsHash,
-    })
-
     return {
       success: true,
       ipfsUrl,
@@ -120,7 +107,6 @@ export async function uploadMetadataToIPFS(
       gatewayUrl,
     }
   } catch (error: any) {
-    console.error('❌ Error subiendo metadata a IPFS:', error)
     return {
       success: false,
       error: error.message || 'Error desconocido',
@@ -199,12 +185,10 @@ export function generateUrbanikaNFTMetadata(params: {
  * Determina el tier de inversión según el monto
  */
 function getInvestmentTier(amount: number): string {
-  if (amount >= 10000) return 'Diamond'
-  if (amount >= 5000) return 'Platinum'
-  if (amount >= 2500) return 'Gold'
-  if (amount >= 1000) return 'Silver'
-  if (amount >= 500) return 'Bronze'
-  return 'Starter'
+  if (amount >= 500) return 'Platinum'
+  if (amount >= 250) return 'Gold'
+  if (amount >= 25) return 'Silver'
+  return 'Bronze'
 }
 
 /**
@@ -231,11 +215,9 @@ export async function createNFTOnIPFS(params: {
 
     // Si hay una imagen pre-subida en .env, usarla
     if (params.usePreUploadedImage && process.env.NEXT_PUBLIC_NFT_BASE_IMAGE_IPFS) {
-      console.log('✅ Usando imagen pre-subida desde .env')
       imageIpfsUrl = process.env.NEXT_PUBLIC_NFT_BASE_IMAGE_IPFS
     } else if (params.imageFile) {
       // 1. Subir imagen a IPFS
-      console.log('📤 Subiendo imagen a IPFS...')
       const imageUpload = await uploadFileToIPFS(params.imageFile)
       if (!imageUpload.success || !imageUpload.ipfsUrl) {
         return {
@@ -252,14 +234,12 @@ export async function createNFTOnIPFS(params: {
     }
 
     // 2. Generar metadata con la URL de la imagen
-    console.log('📝 Generando metadata...')
     const metadata = generateUrbanikaNFTMetadata({
       ...params,
       imageIpfsUrl,
     })
 
     // 3. Subir metadata a IPFS
-    console.log('📤 Subiendo metadata a IPFS...')
     const metadataUpload = await uploadMetadataToIPFS(metadata)
     if (!metadataUpload.success || !metadataUpload.ipfsUrl) {
       return {
@@ -268,7 +248,6 @@ export async function createNFTOnIPFS(params: {
       }
     }
 
-    console.log('✅ NFT creado exitosamente en IPFS')
 
     return {
       success: true,
@@ -278,7 +257,6 @@ export async function createNFTOnIPFS(params: {
       gatewayUrl: metadataUpload.gatewayUrl,
     }
   } catch (error: any) {
-    console.error('❌ Error en workflow de IPFS:', error)
     return {
       success: false,
       error: error.message || 'Error desconocido',

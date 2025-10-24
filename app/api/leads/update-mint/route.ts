@@ -1,13 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { protectedApiRoute } from '@/lib/auth/middleware'
 
 /**
- * API segura para actualizar un lead después de mintear NFT
+ * API segura para actualizar un lead después de mintear NFT (Protected)
  *
  * POST /api/leads/update-mint
+ * Headers: x-api-key (required)
  * Solo permite actualizar el estado de mint con un hash de transacción válido
  */
 export async function POST(request: NextRequest) {
+  // Verificar autenticación - endpoint crítico que modifica datos
+  const { authorized, response } = await protectedApiRoute(request, {
+    requireApiKey: true
+  })
+
+  if (!authorized) {
+    return response!
+  }
+
   try {
     const { leadId, mintTxHash, tokenId } = await request.json()
 
@@ -32,7 +43,6 @@ export async function POST(request: NextRequest) {
     // Solo permitir actualizar si no ha sido minteado previamente
     // (prevenir modificaciones maliciosas)
     if (existingLead.nftMinted && existingLead.mintTxHash) {
-      console.warn(`⚠️  Intento de actualizar lead ya minteado: ${leadId}`)
       return NextResponse.json(
         { error: 'Este lead ya tiene un NFT minteado' },
         { status: 400 }
@@ -58,14 +68,14 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    console.log(`✅ Lead ${leadId} actualizado con mint exitoso: ${mintTxHash}`)
-
     return NextResponse.json({
       success: true,
       lead: updatedLead,
     })
   } catch (error) {
-    console.error('❌ Error actualizando lead:', error)
+    if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") { console.error('Error actualizando lead:', error) }
+    }
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
   }
 }

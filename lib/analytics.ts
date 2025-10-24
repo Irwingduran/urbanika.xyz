@@ -36,7 +36,6 @@ export function trackEvent(event: AnalyticsEvent, properties?: EventProperties) 
 
     // Log en desarrollo
     if (process.env.NODE_ENV === 'development') {
-      console.log('📊 Analytics Event:', event, properties)
     }
 
     // Aquí puedes agregar otros servicios de analytics
@@ -45,7 +44,6 @@ export function trackEvent(event: AnalyticsEvent, properties?: EventProperties) 
     //   (window as any).gtag('event', event, properties)
     // }
   } catch (error) {
-    console.error('Error tracking event:', error)
   }
 }
 
