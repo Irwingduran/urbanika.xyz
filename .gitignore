@@ -24,13 +24,14 @@ yarn-debug.log*
 yarn-error.log*
 
 # Environment files (CRÍTICO - NO SUBIR CREDENCIALES AL REPO)
-# Solo permitimos .env.production (referencia sin credenciales)
 .env.local
 .env*.local
 .env
 .env.*.local
 .env.example
 *.env.example
+.env.production
+.env.production.*
 
 # Vercel
 .vercel
