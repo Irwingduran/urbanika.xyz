@@ -69,4 +69,8 @@ scripts/create-wallet.ts
 scripts/clean-console-logs.js
 scripts/clean-console-logs.sh
 
+# Archivos de documentación (NO subir al repositorio)
+*.md
+!README.md
+
 /lib/generated/prisma
