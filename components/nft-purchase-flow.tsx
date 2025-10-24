@@ -27,6 +27,7 @@ import { formatEther, formatUnits } from "viem"
 import { TOKENS, type SupportedToken } from "@/lib/web3/tokens"
 import { useERC20Token } from "@/hooks/web3/useERC20"
 import { useETHPrice, useInvestmentTiers } from "@/hooks/web3/useETHPrice"
+import { useUSDtoMXN } from "@/hooks/useUSDtoMXN"
 import { getContractAddress } from "@/lib/web3/config"
 import { NetworkChecker } from "@/components/network-checker"
 import { TransactionStatus } from "@/components/transaction-status"
@@ -85,6 +86,9 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
   const { priceInUSD, getETHAmount, formattedPrice } = useETHPrice(chain?.id)
   const { getTierForAmount } = useInvestmentTiers()
 
+  // USD to MXN exchange rate hook
+  const { usdToMxn, isLoading: isLoadingExchangeRate, lastUpdate } = useUSDtoMXN()
+
   // Get contract address for ERC20 approvals
   const contractAddress = getContractAddress(chain?.id || 534352)
 
@@ -121,6 +125,10 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
   const expectedReturn = investmentAmount * 1.5
   // Ahora trabajamos directamente en USD
   const amountUSD = investmentAmount // El monto ya está en USD
+
+  // Conversión USD a MXN (usando tipo de cambio real de API)
+  const amountMXN = investmentAmount * usdToMxn
+  const expectedReturnMXN = expectedReturn * usdToMxn
 
   // Preset amounts in USD based on new tiers
   const presetAmounts = [10, 25, 50, 100, 250, 500, 1000]
@@ -424,32 +432,71 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
             <div className="text-center">
               <h3 className="text-2xl font-bold text-brand-dark mb-2">¿Cuánto quieres invertir?</h3>
               <p className="text-gray-600">Elige un monto o ingresa tu propia cantidad</p>
-              {priceInUSD > 0 && (
-                <p className="text-sm text-brand-aqua mt-2">
-                  Precio ETH: {formattedPrice} (Oracle de Chainlink)
-                </p>
-              )}
             </div>
 
-            {/* Preset amounts */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {presetAmounts.map((amount) => (
-                <Button
-                  key={amount}
-                  variant={investmentAmount === amount ? "default" : "outline"}
-                  onClick={() => setInvestmentAmount(amount)}
-                  className={`h-16 ${
-                    investmentAmount === amount
-                      ? "bg-brand-aqua text-white"
-                      : "border-brand-aqua/30 hover:border-brand-aqua"
-                  }`}
-                >
-                  <div className="text-center">
-                    <div className="font-bold">${amount >= 1000 ? `${(amount / 1000).toFixed(1)}k` : amount}</div>
-                    <div className="text-xs opacity-75">USD</div>
-                  </div>
-                </Button>
-              ))}
+            {/* Monto seleccionado en MXN (destacado) */}
+            <Card className="bg-gradient-to-r from-brand-aqua/10 to-blue-50 border-brand-aqua/30">
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <p className="text-sm text-gray-600 mb-1">Inversión aproximada</p>
+                  {isLoadingExchangeRate ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-6 w-6 animate-spin text-brand-aqua" />
+                      <p className="text-lg text-gray-500">Obteniendo tipo de cambio...</p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-4xl font-bold text-brand-dark mb-2">
+                        ${amountMXN.toLocaleString()} <span className="text-2xl">MXN</span>
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        (${investmentAmount} USD)
+                      </p>
+                      <p className="text-xs text-gray-400 mt-2">
+                        Tipo de cambio: ${usdToMxn.toFixed(2)} MXN/USD
+                        {lastUpdate && (
+                          <span className="ml-2">
+                            • Actualizado: {lastUpdate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
+                      </p>
+                      {priceInUSD > 0 && (
+                        <p className="text-xs text-brand-aqua mt-1">
+                          Precio ETH: {formattedPrice} (Oracle de Chainlink)
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Preset amounts en USD */}
+            <div>
+              <Label className="text-sm text-gray-600 mb-3 block">Montos rápidos (USD)</Label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {presetAmounts.map((amount) => (
+                  <Button
+                    key={amount}
+                    variant={investmentAmount === amount ? "default" : "outline"}
+                    onClick={() => setInvestmentAmount(amount)}
+                    className={`h-20 ${
+                      investmentAmount === amount
+                        ? "bg-brand-aqua text-white"
+                        : "border-brand-aqua/30 hover:border-brand-aqua"
+                    }`}
+                    disabled={isLoadingExchangeRate}
+                  >
+                    <div className="text-center">
+                      <div className="font-bold text-lg">${amount >= 1000 ? `${(amount / 1000).toFixed(1)}k` : amount}</div>
+                      <div className="text-xs opacity-75">USD</div>
+                      {!isLoadingExchangeRate && (
+                        <div className="text-xs opacity-60 mt-1">≈ ${(amount * usdToMxn).toLocaleString()} MXN</div>
+                      )}
+                    </div>
+                  </Button>
+                ))}
+              </div>
             </div>
 
             {/* Custom amount */}
@@ -463,8 +510,11 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
                 min="10"
                 step="5"
                 className="text-lg font-semibold"
+                disabled={isLoadingExchangeRate}
               />
-              <p className="text-sm text-gray-500">Mínimo: $10 USD</p>
+              <p className="text-sm text-gray-500">
+                Mínimo: $10 USD {!isLoadingExchangeRate && `(≈ $${(10 * usdToMxn).toFixed(0)} MXN)`}
+              </p>
             </div>
 
             {/* Expected return */}
@@ -473,7 +523,12 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Retorno esperado (1.5x)</p>
-                    <p className="text-2xl font-bold text-green-600">${expectedReturn.toFixed(2)} USD</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      ${expectedReturnMXN.toLocaleString()} MXN
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      (${expectedReturn.toFixed(2)} USD)
+                    </p>
                     <div className="flex items-center gap-2 mt-1">
                       <p className="text-xs text-gray-500">
                         Tier: {getTierForAmount(investmentAmount).emoji} {getTierForAmount(investmentAmount).name}
@@ -1087,9 +1142,9 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <Card className="bg-white max-w-2xl w-full my-8">
-        <CardContent className="p-8">
+    <div className="fixed inset-0 bg-black/60 flex items-start justify-center z-50 p-4 overflow-y-auto">
+      <Card className="bg-white max-w-2xl w-full my-4 max-h-[calc(100vh-2rem)] flex flex-col">
+        <CardContent className="p-8 overflow-y-auto flex-1">
           {/* Progress indicator */}
           {!["processing", "success", "error"].includes(step) && (
             <div className="mb-8">

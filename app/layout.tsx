@@ -8,7 +8,7 @@ import { ClientErrorHandler } from './client-error-handler'
 
 export const metadata: Metadata = {
   title: 'Urbánika - Invierte en Casas Regenerativas con NFTs',
-  description: 'Invierte en proyectos de vivienda regenerativa y recibe retornos del 50% a través de NFTs en la blockchain de Scroll. Inversión mínima desde $250 MXN.',
+  description: 'Invierte en proyectos de vivienda regenerativa y recibe un retorno de 1.5x tu inversión a través de NFTs en la blockchain de Scroll. Inversión mínima desde $10 USD.',
   keywords: [
     'inversión inmobiliaria',
     'NFT',
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     url: 'https://urbanika.xyz',
     siteName: 'Urbánika',
     title: 'Urbánika - Invierte en Casas Regenerativas con NFTs',
-    description: 'Invierte en proyectos de vivienda regenerativa y recibe retornos del 50% a través de NFTs en la blockchain de Scroll.',
+    description: 'Invierte en proyectos de vivienda regenerativa y recibe un retorno de 1.5x tu inversión a través de NFTs en la blockchain de Scroll.',
     images: [
       {
         url: '/nft-image.png',
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Urbánika - Invierte en Casas Regenerativas con NFTs',
-    description: 'Invierte en proyectos de vivienda regenerativa y recibe retornos del 50% a través de NFTs.',
+    description: 'Invierte en proyectos de vivienda regenerativa y recibe un retorno de 1.5x tu inversión a través de NFTs.',
     images: ['/nft-image.png'],
   },
   viewport: {
