@@ -20,10 +20,11 @@ const FALLBACK_RATE = 20 // Fallback: 20 pesos por dólar
 const FETCH_TIMEOUT = 10000 // 10 segundos timeout
 
 // APIs alternativas (intentar en orden)
+// Actualizado a v6 para eliminar warnings
 const API_URLS = [
-  'https://api.exchangerate-api.com/v4/latest/USD',
-  'https://open.er-api.com/v6/latest/USD',
+  'https://open.er-api.com/v6/latest/USD',  // API v6 gratuita sin rate limit
   'https://api.exchangerate.host/latest?base=USD&symbols=MXN',
+  'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json', // Backup adicional
 ]
 
 /**
@@ -55,6 +56,10 @@ function extractMXNRate(data: any, apiUrl: string): number | null {
   }
   if (data.conversion_rates?.MXN) {
     return data.conversion_rates.MXN
+  }
+  // Formato de fawazahmed0 currency API
+  if (data.usd?.mxn) {
+    return data.usd.mxn
   }
   return null
 }
