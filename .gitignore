@@ -90,5 +90,14 @@ next-env.d.ts
 # Datos de migración (contiene información de inversionistas)
 migration-data.json
 migration-data-*.json
+migrations/
+migrations/*.json
+
+# Deployments (contiene información de contratos y transacciones)
+deployments/
+deployments/*.json
+
+# Archivos de backup
+*.bak
 
 /lib/generated/prisma

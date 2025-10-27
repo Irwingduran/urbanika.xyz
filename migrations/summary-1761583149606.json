@@ -1,9 +1,0 @@
-{
-  "timestamp": "2025-10-27T16:39:09.606Z",
-  "oldContract": "0xB7DECf6d81EBE13F9b2B485a88a3aaeA40A7Afc0",
-  "newContract": "0x1F3B7B68627f8B9BFe3db1F4a419ee20226b4a1d",
-  "totalMigrated": 3,
-  "totalFailed": 0,
-  "totalSupplyOld": 3,
-  "totalSupplyNew": 3
-}
