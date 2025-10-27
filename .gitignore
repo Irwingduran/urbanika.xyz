@@ -77,6 +77,10 @@ scripts/clean-console-logs.sh
 # Archivos de documentación (NO subir al repositorio)
 *.md
 !README.md
+docs/
+
+# Scripts de desarrollo y corrección (no necesarios en producción)
+scripts/
 
 # Archivos de construcción y cache
 .DS_Store
@@ -85,5 +89,6 @@ next-env.d.ts
 
 # Datos de migración (contiene información de inversionistas)
 migration-data.json
+migration-data-*.json
 
 /lib/generated/prisma

@@ -61,8 +61,8 @@ export const config = createConfig({
 // Chain por defecto: Scroll Mainnet
 export const defaultChain = scroll
 
-// Contract address en Scroll Mainnet (v2.0.2 with Chainlink Oracle)
-export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET || '0xB7DECf6d81EBE13F9b2B485a88a3aaeA40A7Afc0'
+// Contract address en Scroll Mainnet (v2.0.3 with Chainlink Oracle - CORRECTED)
+export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET || '0x1F3B7B68627f8B9BFe3db1F4a419ee20226b4a1d'
 
 // Helper para obtener contract address (siempre retorna mainnet)
 export function getContractAddress(chainId?: number): string {

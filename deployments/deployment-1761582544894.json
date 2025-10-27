@@ -1,0 +1,33 @@
+{
+  "contract": "UrbanikaNFT",
+  "version": "2.0.3",
+  "network": "scroll",
+  "address": "0x1F3B7B68627f8B9BFe3db1F4a419ee20226b4a1d",
+  "deployer": "0x62b02BF04825d73FA911cbb8A8FCD22f3C046933",
+  "treasury": "0x62b02BF04825d73FA911cbb8A8FCD22f3C046933",
+  "oracle": "0x6bF14CB0A831078629D993FDeBcB182b21A8774C",
+  "deploymentDate": "2025-10-27T16:29:04.894Z",
+  "txHash": "0x1fe375bf5c672af9549073221001c291dcece838c33a9a7f1b5e74f540658270",
+  "features": [
+    "Chainlink Oracle ETH/USD with ALTA-01 security validations",
+    "Manual distribution process (0% buffer, all funds to multisig)",
+    "Fund validation with balance checks",
+    "New investment tiers ($25, $250, $500)",
+    "Manual price fallback",
+    "NonReentrant fix in batch distributions",
+    "CEI pattern in minting",
+    "Events for ETH and Token withdrawals"
+  ],
+  "tiers": {
+    "bronze": "< $25",
+    "silver": "$25 - $250",
+    "gold": "$250 - $500",
+    "platinum": ">= $500"
+  },
+  "securityFixes": {
+    "ALTA-01": "Oracle validation (staleness, price > 0, round completed)",
+    "nonReentrant": "Fixed in batchDistributeReturns with internal function",
+    "CEI": "Improved CEI pattern in publicMintWithETH",
+    "events": "Added ETHWithdrawn and TokensWithdrawn events"
+  }
+}

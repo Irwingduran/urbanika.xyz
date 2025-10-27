@@ -51,117 +51,21 @@ error SameAsCurrentTreasury();
 error NoPendingTreasuryChange();
 error NoETHBalance();
 error NoTokenBalance();
-error InvalidPriceFromOracle();
-error StalePriceFromOracle();
-error StaleRoundFromOracle();
 
 /**
- * @title UrbanikaNFT - Production Ready Version 2.0.3
+ * @title UrbanikaNFT - Production Ready Version 2
  * @dev NFT de inversión para Urbanika - Red Scroll
  * @notice Cada NFT representa una inversión en el ecosistema de casas regenerativas
  *
- * Características v2.0.3:
+ * Características v2.0 (Sin conversión a MXN):
  * - Inversiones directas en ETH, USDC o USDT
  * - Sistema de retorno 1.5x basado en ventas de casas
  * - Tiers de inversión (Bronze, Silver, Gold, Platinum)
  * - Distribución de ganancias proporcional
  * - MAX_SUPPLY para evitar dilución
- * - Treasury/Multisig con timelock para cambios
+ * - Treasury con timelock para cambios
  * - Email hasheado para privacidad
  * - Metadata almacenado en IPFS
- * - Oracle de Chainlink con validaciones de seguridad (ALTA-01)
- *
- * ═══════════════════════════════════════════════════════════════════════════
- * FLUJO DE FONDOS - PROCESO DE DISTRIBUCIÓN MANUAL
- * ═══════════════════════════════════════════════════════════════════════════
- *
- * Este contrato implementa un proceso de distribución MANUAL donde:
- *
- * 1. MINTING (Inversiones entrantes):
- *    - Cuando usuarios hacen publicMintWithETH() o publicMintWithToken()
- *    - Los fondos van DIRECTAMENTE al treasury/multisig
- *    - El contrato NO retiene fondos (buffer = 0%)
- *    - Treasury/multisig = dirección configurada en el constructor
- *
- * 2. DISTRIBUCIÓN DE RETORNOS (Proceso manual en 3 pasos):
- *
- *    Paso 1 - Calcular retornos pendientes:
- *      - Usar getActiveNFTs() para obtener NFTs activos
- *      - Calcular cuánto se debe distribuir a cada inversor
- *
- *    Paso 2 - Transferir fondos al contrato:
- *      - Desde multisig/treasury, transferir fondos al contrato
- *      - Para ETH: enviar ETH directamente a address(contrato)
- *      - Para USDC/USDT: usar transfer() desde multisig al contrato
- *      - El contrato tiene receive() para aceptar ETH
- *
- *    Paso 3 - Ejecutar distribución:
- *      - Llamar a distributeReturn(tokenId, amount) para cada NFT
- *      - O usar batchDistributeReturns() para distribuciones proporcionales
- *      - Los fondos se envían desde el contrato a los inversores
- *
- * 3. EJEMPLO DE FLUJO COMPLETO:
- *
- *    Mes 0-6: Fase de inversión
- *      - User1 invierte 1000 USDC → va a multisig
- *      - User2 invierte 2000 USDC → va a multisig
- *      - User3 invierte 500 USDC → va a multisig
- *      - Total en multisig: 3500 USDC
- *      - Proyecto usa fondos para desarrollo
- *
- *    Mes 7: Primera distribución de retornos
- *      - Se vende una casa, hay 1000 USDC para distribuir
- *      - Multisig transfiere 1000 USDC al contrato
- *      - Owner llama: batchDistributeReturns([1,2,3], 1000, USDC)
- *      - Fondos se distribuyen proporcionalmente a inversores
- *
- *    Mes 12: Segunda distribución
- *      - Otra venta genera 1500 USDC
- *      - Multisig → contrato: 1500 USDC
- *      - distributeReturn() para cada NFT
- *      - Si algún NFT alcanza 1.5x, se marca como completado
- *
- * 4. VENTAJAS DEL PROCESO MANUAL:
- *    - Control total: multisig controla 100% de los fondos
- *    - Flexibilidad: distribuir cuando haya ventas reales
- *    - Seguridad: fondos no quedan en el contrato
- *    - Transparencia: cada distribución es una transacción visible
- *
- * 5. FUNCIONES IMPORTANTES:
- *    - getActiveNFTs() → lista de NFTs que necesitan distribución
- *    - getPendingReturn(tokenId) → cuánto falta por distribuir
- *    - getContractBalance(token) → verificar fondos antes de distribuir
- *    - distributeReturn() → distribuir a un NFT individual
- *    - batchDistributeReturns() → distribuir a múltiples NFTs
- *
- * 6. PATRÓN DE DISTRIBUCIÓN (PUSH):
- *    Este contrato usa PUSH payments (envío directo a inversores).
- *    Alternativa: PULL payments (inversores reclaman sus fondos).
- *
- *    Ventajas PUSH:
- *    - Owner controla timing de distribuciones
- *    - Inversores reciben automáticamente (mejor UX)
- *    - Alineado con modelo de negocio (distribuciones periódicas)
- *
- *    Consideraciones:
- *    - Si un inversor es un contrato que revierte, su distribución falla
- *    - Solución: distribuir individualmente y skip inversores problemáticos
- *
- * 7. SEGURIDAD Y ACCESO:
- *    ⚠️ CENTRALIZACIÓN: Owner (onlyOwner) controla operaciones críticas:
- *    - mint() - mintear NFTs para inversiones off-chain
- *    - distributeReturn() - distribuir retornos
- *    - setMinInvestment() - cambiar montos mínimos
- *    - pause/unpause - pausar contrato en emergencia
- *    - withdrawETH/Tokens - retirar fondos del contrato
- *
- *    RECOMENDACIÓN FUERTE: Owner debe ser una multisig (Gnosis Safe)
- *    con múltiples firmantes. NUNCA usar una EOA personal como owner.
- *
- *    Treasury también debe ser multisig (configurado en constructor).
- *    Cambios de treasury tienen timelock de 7 días para seguridad.
- *
- * ═══════════════════════════════════════════════════════════════════════════
  */
 contract UrbanikaNFT is
     ERC721,
@@ -237,15 +141,9 @@ contract UrbanikaNFT is
     uint256 public minInvestmentUSDT = 10 * 1e6;      // Mínimo 10 USDT
 
     // Direcciones de tokens ERC20 (Scroll Mainnet)
-    // IMPORTANTE: Estas direcciones son específicas de Scroll Mainnet
-    // Para otras redes, actualizar estas constantes antes del deploy
     address public constant USDC = 0x06eFdBFf2a14a7c8E15944D1F4A48F9F95F663A4;
     address public constant USDT = 0xf55BEC9cafDbE8730f096Aa55dad6D22d44099Df;
 
-    // LIMITACIÓN: acceptedTokens permite marcar cualquier token como aceptado,
-    // pero _getPaymentTokenType() solo reconoce USDC y USDT hardcodeados arriba.
-    // Si se acepta otro token, publicMintWithToken() fallará.
-    // Para soportar tokens adicionales, modificar _getPaymentTokenType().
     mapping(address => bool) public acceptedTokens;
 
     // Treasury con timelock
@@ -255,13 +153,6 @@ contract UrbanikaNFT is
     uint256 public constant TREASURY_TIMELOCK = 7 days;
 
     // Pausa independiente de minting
-    // IMPORTANTE: Existen DOS mecanismos de pausa:
-    // 1. paused() (de Pausable) - pausa TODAS las operaciones (emergencia)
-    // 2. mintPaused - pausa SOLO el minting (mantenimiento/control de oferta)
-    //
-    // Razón: Permitir distribuciones incluso cuando el minting esté pausado.
-    // Inversores siempre deben poder recibir sus retornos, incluso si no
-    // se permiten nuevas inversiones temporalmente.
     bool public mintPaused = false;
 
     // Oracle de precios Chainlink
@@ -333,17 +224,6 @@ contract UrbanikaNFT is
         uint256 newPrice
     );
 
-    event ETHWithdrawn(
-        address indexed recipient,
-        uint256 amount
-    );
-
-    event TokensWithdrawn(
-        address indexed token,
-        address indexed recipient,
-        uint256 amount
-    );
-
     // ============ Modifiers ============
 
     modifier whenMintNotPaused() {
@@ -365,11 +245,6 @@ contract UrbanikaNFT is
         // Configurar tokens aceptados
         acceptedTokens[USDC] = true;
         acceptedTokens[USDT] = true;
-
-        // NOTA: _treasury debe ser la dirección de tu multisig (ej: Gnosis Safe)
-        // Todos los fondos de inversiones van directamente a esta dirección.
-        // Para distribuir retornos, debes transferir fondos desde esta multisig
-        // al contrato manualmente antes de llamar a distributeReturn().
     }
 
     // ============ Minting Functions ============
@@ -410,11 +285,6 @@ contract UrbanikaNFT is
         // Calcular retorno esperado (1.5x en el token original)
         uint256 expectedReturn = (investmentAmount * RETURN_MULTIPLIER) / MULTIPLIER_BASE;
 
-        // Verificación de seguridad: expectedReturn debe ser mayor que investmentAmount
-        // Con RETURN_MULTIPLIER = 150 y MULTIPLIER_BASE = 100, esto siempre es verdad,
-        // pero esta validación protege contra cambios futuros incorrectos.
-        if (expectedReturn <= investmentAmount) revert PriceIncorrect(); // Reusing error
-
         // Hash del email para privacidad
         bytes32 emailHash = keccak256(bytes(investorEmail));
 
@@ -451,11 +321,6 @@ contract UrbanikaNFT is
      * @dev Mintea NFT con pago en ETH (público)
      * @param _tokenURI URI del metadata en IPFS
      * @return tokenId ID del NFT creado
-     *
-     * IMPORTANTE - FLUJO DE FONDOS:
-     * Los fondos enviados en msg.value van DIRECTAMENTE al treasury/multisig.
-     * El contrato NO retiene fondos. Para distribuir retornos posteriormente,
-     * el owner debe transferir fondos manualmente desde el multisig al contrato.
      */
     function publicMintWithETH(
         string memory _tokenURI
@@ -480,7 +345,6 @@ contract UrbanikaNFT is
 
         // Calcular retorno esperado (1.5x)
         uint256 expectedReturn = (investmentAmount * RETURN_MULTIPLIER) / MULTIPLIER_BASE;
-        if (expectedReturn <= investmentAmount) revert PriceIncorrect();
 
         // Crear investment (sin email en public mint)
         investments[tokenId] = Investment({
@@ -506,13 +370,11 @@ contract UrbanikaNFT is
         _safeMint(msg.sender, tokenId);
         _setTokenURI(tokenId, _tokenURI);
 
-        // CEI Pattern: Enviar fondos a treasury ANTES de emitir eventos
-        // Si esta transferencia falla, todo se revierte (incluyendo el mint)
+        emit NFTMinted(tokenId, msg.sender, investmentAmount, PaymentToken.ETH, tier, expectedReturn);
+
+        // Enviar fondos a treasury
         (bool sent, ) = treasury.call{value: investmentAmount}("");
         if (!sent) revert FailedToSendETH();
-
-        // Emitir evento después de interacciones exitosas
-        emit NFTMinted(tokenId, msg.sender, investmentAmount, PaymentToken.ETH, tier, expectedReturn);
 
         return tokenId;
     }
@@ -523,20 +385,6 @@ contract UrbanikaNFT is
      * @param _tokenURI URI del metadata en IPFS
      * @param paymentTokenAddress Dirección del token ERC20 (USDC o USDT)
      * @return tokenId ID del NFT creado
-     *
-     * IMPORTANTE - FLUJO DE FONDOS:
-     * Los tokens (USDC/USDT) van DIRECTAMENTE al treasury/multisig.
-     * El contrato NO retiene fondos. Para distribuir retornos posteriormente,
-     * el owner debe transferir tokens manualmente desde el multisig al contrato.
-     *
-     * IMPORTANTE - APROBACIÓN DE TOKENS:
-     * El usuario DEBE aprobar este contrato para gastar "amount" de tokens ANTES
-     * de llamar esta función. Uso:
-     *   1. USDC.approve(addressContrato, amount)
-     *   2. contrato.publicMintWithToken(amount, uri, USDC)
-     *
-     * Si la aprobación es insuficiente, safeTransferFrom revertirá con error
-     * del token ERC20 (típicamente "ERC20: insufficient allowance").
      */
     function publicMintWithToken(
         uint256 amount,
@@ -568,7 +416,6 @@ contract UrbanikaNFT is
 
         // Calcular retorno esperado (1.5x)
         uint256 expectedReturn = (amount * RETURN_MULTIPLIER) / MULTIPLIER_BASE;
-        if (expectedReturn <= amount) revert PriceIncorrect();
 
         // Crear investment
         investments[tokenId] = Investment({
@@ -602,37 +449,15 @@ contract UrbanikaNFT is
     // ============ Distribution Functions ============
 
     /**
-     * @dev Distribuye retornos a un NFT específico (función pública)
+     * @dev Distribuye retornos a un NFT específico
      * @param tokenId ID del NFT
      * @param amount Cantidad a distribuir (en el token original de inversión)
-     *
-     * IMPORTANTE - PROCESO MANUAL DE DISTRIBUCIÓN:
-     * Esta función requiere que los fondos estén PREVIAMENTE en el contrato.
-     *
-     * Proceso en 2 pasos:
-     * 1. Transferir fondos desde multisig/treasury al contrato:
-     *    - Para ETH: enviar ETH directamente al contrato (tiene receive())
-     *    - Para USDC/USDT: usar transfer() desde multisig al contrato
-     * 2. Llamar a esta función distributeReturn()
-     *
-     * Verificar balance del contrato antes con getContractBalance(token).
-     * Si el balance es insuficiente, la transacción revertirá con InsufficientETHBalance,
-     * InsufficientUSDCBalance, o InsufficientUSDTBalance.
      */
     function distributeReturn(uint256 tokenId, uint256 amount)
         public
         onlyOwner
         nonReentrant
     {
-        _distributeReturnInternal(tokenId, amount);
-    }
-
-    /**
-     * @dev Lógica interna de distribución (sin nonReentrant para evitar conflictos con batch)
-     * @param tokenId ID del NFT
-     * @param amount Cantidad a distribuir
-     */
-    function _distributeReturnInternal(uint256 tokenId, uint256 amount) internal {
         if (_ownerOf(tokenId) == address(0)) revert TokenDoesNotExist();
         Investment storage investment = investments[tokenId];
         if (!investment.isActive) revert InvestmentNotActive();
@@ -652,7 +477,7 @@ contract UrbanikaNFT is
             if (IERC20(USDT).balanceOf(address(this)) < amountToDistribute) revert InsufficientUSDTBalance();
         }
 
-        // Actualizar retorno actual (state changes ANTES de transfers - CEI pattern)
+        // Actualizar retorno actual
         investment.currentReturn += amountToDistribute;
         totalDistributedByToken[investment.paymentToken] += amountToDistribute;
 
@@ -669,8 +494,8 @@ contract UrbanikaNFT is
         }
 
         emit ReturnDistributed(
-            tokenId,
-            amountToDistribute,
+            tokenId, 
+            amountToDistribute, 
             investment.paymentToken,
             investment.currentReturn
         );
@@ -680,8 +505,8 @@ contract UrbanikaNFT is
             investment.isActive = false;
             activeNFTCount--;
             emit InvestmentCompleted(
-                tokenId,
-                investor,
+                tokenId, 
+                investor, 
                 investment.currentReturn,
                 investment.paymentToken
             );
@@ -693,19 +518,6 @@ contract UrbanikaNFT is
      * @param tokenIds Array de IDs de NFTs
      * @param totalAmount Cantidad total a distribuir
      * @param paymentToken Token en el que se distribuirá
-     *
-     * IMPORTANTE - PROCESO MANUAL DE DISTRIBUCIÓN EN BATCH:
-     * Esta función distribuye proporcionalmente a múltiples NFTs.
-     *
-     * Proceso en 2 pasos:
-     * 1. Transferir fondos desde multisig/treasury al contrato:
-     *    - El totalAmount debe estar disponible en el contrato
-     *    - Verificar con getContractBalance(paymentToken)
-     * 2. Llamar a esta función con el array de tokenIds
-     *
-     * La distribución es proporcional según los retornos pendientes de cada NFT.
-     * Ejemplo: Si NFT#1 espera 500 USDC y NFT#2 espera 1500 USDC,
-     * una distribución de 1000 USDC se divide: 250 para NFT#1, 750 para NFT#2.
      */
     function batchDistributeReturns(
         uint256[] memory tokenIds,
@@ -715,36 +527,33 @@ contract UrbanikaNFT is
         if (tokenIds.length == 0) revert EmptyTokenArray();
         if (totalAmount == 0) revert AmountMustBeGreaterThanZero();
 
-        // Primer paso: Calcular total de retornos pendientes Y preparar array
+        // Calcular total de retornos pendientes para estos NFTs (solo del mismo token)
         uint256 totalPendingReturns = 0;
-        uint256[] memory pendingReturns = new uint256[](tokenIds.length);
-
         for (uint256 i = 0; i < tokenIds.length; i++) {
             Investment storage inv = investments[tokenIds[i]];
             if (inv.isActive && inv.paymentToken == paymentToken) {
-                uint256 pending = inv.expectedReturn - inv.currentReturn;
-                pendingReturns[i] = pending;
-                totalPendingReturns += pending;
+                totalPendingReturns += (inv.expectedReturn - inv.currentReturn);
             }
         }
 
         if (totalPendingReturns == 0) revert NoPendingReturns();
 
-        // Segundo paso: Distribuir proporcionalmente usando los valores pre-calculados
+        // Distribuir proporcionalmente
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            uint256 pendingReturn = pendingReturns[i];
+            Investment storage inv = investments[tokenIds[i]];
+            
+            if (!inv.isActive || inv.paymentToken != paymentToken) continue;
+
+            uint256 pendingReturn = inv.expectedReturn - inv.currentReturn;
             if (pendingReturn == 0) continue;
 
             // Calcular proporción
             uint256 distributionAmount = (totalAmount * pendingReturn) / totalPendingReturns;
-
+            
             if (distributionAmount > 0) {
-                _distributeReturnInternal(tokenIds[i], distributionAmount);
+                distributeReturn(tokenIds[i], distributionAmount);
             }
         }
-
-        // NOTA: Puede quedar polvo (dust) por redondeos de división entera.
-        // El remanente queda en el contrato y puede sumarse a la próxima distribución.
     }
 
     // ============ View Functions ============
@@ -757,7 +566,7 @@ contract UrbanikaNFT is
         view 
         returns (Investment memory) 
     {
-        if (_ownerOf(tokenId) == address(0)) revert TokenDoesNotExist();
+        require(_ownerOf(tokenId) != address(0), "Token does not exist");
         return investments[tokenId];
     }
 
@@ -780,7 +589,7 @@ contract UrbanikaNFT is
         view 
         returns (uint256) 
     {
-        if (_ownerOf(tokenId) == address(0)) revert TokenDoesNotExist();
+        require(_ownerOf(tokenId) != address(0), "Token does not exist");
         Investment memory investment = investments[tokenId];
         return investment.expectedReturn - investment.currentReturn;
     }
@@ -819,23 +628,11 @@ contract UrbanikaNFT is
 
     /**
      * @dev Obtiene todos los NFTs activos
-     *
-     * ⚠️ ADVERTENCIA DE GAS:
-     * Esta función itera por TODOS los tokens desde 1 hasta _tokenIdCounter.
-     * Con miles de NFTs, puede consumir MUCHO GAS o superar el límite de gas.
-     *
-     * USO RECOMENDADO:
-     * - Solo para llamadas off-chain (view desde frontend/scripts)
-     * - NUNCA llamar desde otras funciones on-chain
-     * - Para más de 500 NFTs, considerar implementar paginación
-     *
-     * ALTERNATIVA: Mantener un array de NFTs activos en storage y actualizar
-     * en cada mint/complete, pero esto aumentaría costos de gas en minting.
      */
-    function getActiveNFTs()
-        public
-        view
-        returns (uint256[] memory)
+    function getActiveNFTs() 
+        public 
+        view 
+        returns (uint256[] memory) 
     {
         uint256[] memory activeTokens = new uint256[](activeNFTCount);
         uint256 currentIndex = 0;
@@ -859,7 +656,7 @@ contract UrbanikaNFT is
         public 
         onlyOwner 
     {
-        if (newMin == 0) revert MinimumMustBeGreaterThanZero();
+        require(newMin > 0, "Minimum must be greater than 0");
         
         uint256 oldMin;
         
@@ -884,8 +681,8 @@ contract UrbanikaNFT is
         public 
         onlyOwner 
     {
-        if (_ownerOf(tokenId) == address(0)) revert TokenDoesNotExist();
-        if (bytes(newTokenURI).length == 0) revert InvalidTokenURI();
+        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        require(bytes(newTokenURI).length > 0, "Invalid token URI");
         
         _setTokenURI(tokenId, newTokenURI);
         emit MetadataUpdated(tokenId, newTokenURI);
@@ -898,7 +695,7 @@ contract UrbanikaNFT is
         public 
         onlyOwner 
     {
-        if (tokenAddress == address(0)) revert InvalidTokenAddress();
+        require(tokenAddress != address(0), "Invalid token address");
         acceptedTokens[tokenAddress] = isAccepted;
         emit TokenAcceptanceToggled(tokenAddress, isAccepted);
     }
@@ -932,8 +729,8 @@ contract UrbanikaNFT is
         public 
         onlyOwner 
     {
-        if (newTreasury == address(0)) revert InvalidTreasuryAddress();
-        if (newTreasury == treasury) revert SameAsCurrentTreasury();
+        require(newTreasury != address(0), "Invalid treasury address");
+        require(newTreasury != treasury, "Same as current treasury");
 
         pendingTreasury = newTreasury;
         treasuryChangeTimestamp = block.timestamp + TREASURY_TIMELOCK;
@@ -945,8 +742,8 @@ contract UrbanikaNFT is
      * @dev Ejecuta cambio de treasury (paso 2 - después del timelock)
      */
     function executeTreasuryChange() public onlyOwner {
-        if (pendingTreasury == address(0)) revert NoPendingTreasuryChange();
-        if (block.timestamp < treasuryChangeTimestamp) revert TimelockNotExpired();
+        require(pendingTreasury != address(0), "No pending treasury change");
+        require(block.timestamp >= treasuryChangeTimestamp, "Timelock not expired");
 
         address payable oldTreasury = treasury;
         treasury = pendingTreasury;
@@ -960,7 +757,7 @@ contract UrbanikaNFT is
      * @dev Cancela cambio de treasury pendiente
      */
     function cancelTreasuryChange() public onlyOwner {
-        if (pendingTreasury == address(0)) revert NoPendingTreasuryChange();
+        require(pendingTreasury != address(0), "No pending treasury change");
         pendingTreasury = payable(address(0));
         treasuryChangeTimestamp = 0;
     }
@@ -979,8 +776,8 @@ contract UrbanikaNFT is
      * @param newPrice Precio en USD con 8 decimales (ej: 2500_00000000 = $2500)
      */
     function setManualETHPrice(uint256 newPrice) public onlyOwner {
-        if (newPrice == 0) revert PriceMustBeGreaterThanZero();
-        if (newPrice >= 1000000 * 1e8) revert PriceIncorrect(); // Max $1M por ETH
+        require(newPrice > 0, "Price must be greater than 0");
+        require(newPrice < 1000000 * 1e8, "Price seems incorrect"); // Max $1M por ETH
         uint256 oldPrice = manualETHPrice;
         manualETHPrice = newPrice;
         emit ManualPriceUpdated(oldPrice, newPrice);
@@ -988,26 +785,22 @@ contract UrbanikaNFT is
 
     /**
      * @dev Retira ETH del contrato (solo owner)
-     * Útil para retirar fondos excedentes o dust acumulado
      */
     function withdrawETH() public onlyOwner {
         uint256 balance = address(this).balance;
-        if (balance == 0) revert NoETHBalance();
+        require(balance > 0, "No ETH balance");
         (bool sent, ) = treasury.call{value: balance}("");
-        if (!sent) revert FailedToSendETH();
-        emit ETHWithdrawn(treasury, balance);
+        require(sent, "Failed to send ETH");
     }
 
     /**
      * @dev Retira tokens ERC20 del contrato (solo owner)
-     * Útil para retirar fondos excedentes o dust acumulado de USDC/USDT
      */
     function withdrawTokens(address tokenAddress) public onlyOwner {
-        if (tokenAddress == address(0)) revert InvalidTokenAddress();
+        require(tokenAddress != address(0), "Invalid token address");
         uint256 balance = IERC20(tokenAddress).balanceOf(address(this));
-        if (balance == 0) revert NoTokenBalance();
+        require(balance > 0, "No token balance");
         IERC20(tokenAddress).safeTransfer(treasury, balance);
-        emit TokensWithdrawn(tokenAddress, treasury, balance);
     }
 
     /**
@@ -1032,48 +825,23 @@ contract UrbanikaNFT is
     }
 
     /**
-     * @dev Obtiene el precio de ETH en USD de forma segura con validaciones del Oracle
+     * @dev Obtiene el precio de ETH en USD de forma segura
      * @return price Precio de ETH en USD con 18 decimales
-     *
-     * ORACLE DE CHAINLINK:
-     * - Chainlink ETH/USD feed devuelve precio con 8 decimales
-     * - Este contrato lo convierte a 18 decimales (* 1e10)
-     * - Validaciones ALTA-01 implementadas:
-     *   1. Precio > 0 (no negativo o cero)
-     *   2. Actualización reciente (< 1 hora de antigüedad)
-     *   3. Round completado (answeredInRound >= roundId)
-     *
-     * FALLBACK:
-     * - Si el Oracle falla o no está configurado, usa manualETHPrice
-     * - manualETHPrice tiene 8 decimales, también se convierte a 18
-     * - Owner debe actualizar manualETHPrice regularmente con setManualETHPrice()
-     *
-     * IMPORTANTE PARA MULTISIG/OWNER:
-     * - Revisar precio manual semanalmente y actualizarlo
-     * - Monitorear eventos PriceFeedUpdated y ManualPriceUpdated
      */
     function getETHPriceUSD() public view returns (uint256 price) {
         if (address(ethPriceFeed) != address(0)) {
             try ethPriceFeed.latestRoundData() returns (
-                uint80 roundId,
+                uint80,
                 int256 priceInt,
                 uint256,
                 uint256 updatedAt,
-                uint80 answeredInRound
+                uint80
             ) {
-                // ✅ AUDITORÍA ALTA-01: Validaciones completas de seguridad del Oracle
-                // 1. Precio debe ser positivo
-                if (priceInt <= 0) revert InvalidPriceFromOracle();
-
-                // 2. Precio no debe estar desactualizado (> 1 hora)
-                if (block.timestamp - updatedAt > PRICE_STALENESS_THRESHOLD)
-                    revert StalePriceFromOracle();
-
-                // 3. Validar que el round se haya completado correctamente
-                if (answeredInRound < roundId) revert StaleRoundFromOracle();
-
-                // Chainlink devuelve precio con 8 decimales, convertir a 18
-                return uint256(priceInt) * 1e10;
+                // Verificar que el precio es válido y no está obsoleto
+                if (priceInt > 0 && block.timestamp - updatedAt <= PRICE_STALENESS_THRESHOLD) {
+                    // Chainlink devuelve precio con 8 decimales, convertir a 18
+                    return uint256(priceInt) * 1e10;
+                }
             } catch {
                 // Si falla el oracle, usar precio manual
             }
@@ -1135,7 +903,7 @@ contract UrbanikaNFT is
         } else if (tokenAddress == USDT) {
             return PaymentToken.USDT;
         }
-        revert InvalidTokenAddress();
+        revert("Invalid token address");
     }
 
     // ============ Required Overrides ============

@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: urbanika-db
+    restart: unless-stopped
+    ports:
+      - "51214:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: template1
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Prisma Studio (opcional) - para visualizar la base de datos
+  # Accesible en http://localhost:5555
+  # Ejecutar: docker-compose up prisma-studio
+  # prisma-studio:
+  #   image: node:20-alpine
+  #   container_name: urbanika-prisma-studio
+  #   working_dir: /app
+  #   volumes:
+  #     - .:/app
+  #   ports:
+  #     - "5555:5555"
+  #   command: npx prisma studio
+  #   depends_on:
+  #     - postgres
+
+volumes:
+  postgres_data:
+    driver: local

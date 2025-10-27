@@ -51,11 +51,13 @@ export function useReturnProgress(tokenId: number, chainId?: number) {
 
 /**
  * Hook para obtener todos los NFTs de un inversor
+ * IMPORTANTE: Filtra NFTs #1-3 que tienen valores incorrectos (250 ETH)
+ * Solo retorna NFTs #4+ que tienen valores correctos (13 USDC = 250 MXN)
  */
 export function useInvestorTokens(investorAddress?: string, chainId?: number) {
   const { contractAddress, abi } = useUrbanikaNFT(chainId)
 
-  return useReadContract({
+  const result = useReadContract({
     address: contractAddress,
     abi,
     functionName: 'getInvestorTokens',
@@ -64,6 +66,18 @@ export function useInvestorTokens(investorAddress?: string, chainId?: number) {
       enabled: !!investorAddress,
     },
   })
+
+  // Filtrar NFTs incorrectos (#1-3)
+  // NFTs #1-3 fueron creados con 250 ETH (error de migración)
+  // NFTs #4+ tienen valores correctos de 13 USDC (250 MXN)
+  const INCORRECT_NFT_IDS = [1n, 2n, 3n]
+
+  return {
+    ...result,
+    data: result.data
+      ? (result.data as bigint[]).filter(tokenId => !INCORRECT_NFT_IDS.includes(tokenId))
+      : undefined,
+  }
 }
 
 /**

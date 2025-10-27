@@ -47,7 +47,7 @@ describe("UrbanikaNFT", function () {
   describe("Minting", function () {
     it("Should mint NFT successfully", async function () {
       await expect(
-        urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, TOKEN_URI, EMAIL)
+        urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, 0, TOKEN_URI, EMAIL) // 0 = PaymentToken.ETH
       )
         .to.emit(urbanikaNFT, "NFTMinted")
         .withArgs(
@@ -65,40 +65,40 @@ describe("UrbanikaNFT", function () {
     it("Should fail if amount is below minimum", async function () {
       const tooLow = ethers.parseEther("100"); // < 250 MXN
       await expect(
-        urbanikaNFT.mint(investor1.address, tooLow, TOKEN_URI, EMAIL)
-      ).to.be.revertedWith("Amount below minimum");
+        urbanikaNFT.mint(investor1.address, tooLow, 0, TOKEN_URI, EMAIL)
+      ).to.be.revertedWithCustomError(urbanikaNFT, "AmountBelowMinimum");
     });
 
     it("Should fail if not owner", async function () {
       await expect(
-        urbanikaNFT.connect(investor1).mint(investor2.address, INVESTMENT_AMOUNT, TOKEN_URI, EMAIL)
+        urbanikaNFT.connect(investor1).mint(investor2.address, INVESTMENT_AMOUNT, 0, TOKEN_URI, EMAIL)
       ).to.be.revertedWithCustomError(urbanikaNFT, "OwnableUnauthorizedAccount");
     });
 
     it("Should calculate correct tier", async function () {
       // Bronze (< 1000)
-      await urbanikaNFT.mint(investor1.address, ethers.parseEther("500"), "ipfs://1", EMAIL);
+      await urbanikaNFT.mint(investor1.address, ethers.parseEther("500"), 0, "ipfs://1", EMAIL);
       let investment = await urbanikaNFT.getInvestment(1);
       expect(investment.tier).to.equal(0); // Bronze
 
       // Silver (1000 - 4999)
-      await urbanikaNFT.mint(investor1.address, ethers.parseEther("2000"), "ipfs://2", EMAIL);
+      await urbanikaNFT.mint(investor1.address, ethers.parseEther("2000"), 0, "ipfs://2", EMAIL);
       investment = await urbanikaNFT.getInvestment(2);
       expect(investment.tier).to.equal(1); // Silver
 
       // Gold (5000 - 9999)
-      await urbanikaNFT.mint(investor1.address, ethers.parseEther("7000"), "ipfs://3", EMAIL);
+      await urbanikaNFT.mint(investor1.address, ethers.parseEther("7000"), 0, "ipfs://3", EMAIL);
       investment = await urbanikaNFT.getInvestment(3);
       expect(investment.tier).to.equal(2); // Gold
 
       // Platinum (>= 10000)
-      await urbanikaNFT.mint(investor1.address, ethers.parseEther("15000"), "ipfs://4", EMAIL);
+      await urbanikaNFT.mint(investor1.address, ethers.parseEther("15000"), 0, "ipfs://4", EMAIL);
       investment = await urbanikaNFT.getInvestment(4);
       expect(investment.tier).to.equal(3); // Platinum
     });
 
     it("Should store correct investment data", async function () {
-      await urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, TOKEN_URI, EMAIL);
+      await urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, 0, TOKEN_URI, EMAIL);
 
       const investment = await urbanikaNFT.getInvestment(1);
       expect(investment.investmentAmount).to.equal(INVESTMENT_AMOUNT);
@@ -111,8 +111,8 @@ describe("UrbanikaNFT", function () {
     });
 
     it("Should increment token ID correctly", async function () {
-      await urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, "ipfs://token1", EMAIL);
-      await urbanikaNFT.mint(investor2.address, INVESTMENT_AMOUNT, "ipfs://token2", EMAIL);
+      await urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, 0, "ipfs://token1", EMAIL);
+      await urbanikaNFT.mint(investor2.address, INVESTMENT_AMOUNT, 0, "ipfs://token2", EMAIL);
 
       expect(await urbanikaNFT.totalSupply()).to.equal(2);
       expect(await urbanikaNFT.ownerOf(1)).to.equal(investor1.address);
@@ -123,7 +123,7 @@ describe("UrbanikaNFT", function () {
   describe("Return Distribution", function () {
     beforeEach(async function () {
       // Mint an NFT before each test
-      await urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, TOKEN_URI, EMAIL);
+      await urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, 0, TOKEN_URI, EMAIL);
     });
 
     it("Should distribute return successfully", async function () {
@@ -186,8 +186,8 @@ describe("UrbanikaNFT", function () {
   describe("Batch Distribution", function () {
     beforeEach(async function () {
       // Mint multiple NFTs con URIs únicos
-      await urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, "ipfs://batch1", EMAIL);
-      await urbanikaNFT.mint(investor2.address, INVESTMENT_AMOUNT, "ipfs://batch2", EMAIL);
+      await urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, 0, "ipfs://batch1", EMAIL);
+      await urbanikaNFT.mint(investor2.address, INVESTMENT_AMOUNT, 0, "ipfs://batch2", EMAIL);
     });
 
     it("Should batch distribute successfully", async function () {
@@ -215,7 +215,7 @@ describe("UrbanikaNFT", function () {
 
   describe("View Functions", function () {
     beforeEach(async function () {
-      await urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, TOKEN_URI, EMAIL);
+      await urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, 0, TOKEN_URI, EMAIL);
     });
 
     it("Should get return progress correctly", async function () {
@@ -227,7 +227,7 @@ describe("UrbanikaNFT", function () {
     });
 
     it("Should get investor tokens", async function () {
-      await urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, "ipfs://view2", EMAIL);
+      await urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, 0, "ipfs://view2", EMAIL);
 
       const tokens = await urbanikaNFT.getInvestorTokens(investor1.address);
       expect(tokens.length).to.equal(2);
@@ -236,7 +236,7 @@ describe("UrbanikaNFT", function () {
     });
 
     it("Should count active NFTs correctly", async function () {
-      await urbanikaNFT.mint(investor2.address, INVESTMENT_AMOUNT, "ipfs://view3", EMAIL);
+      await urbanikaNFT.mint(investor2.address, INVESTMENT_AMOUNT, 0, "ipfs://view3", EMAIL);
 
       let activeCount = await urbanikaNFT.getActiveNFTCount();
       expect(activeCount).to.equal(2);
@@ -252,7 +252,7 @@ describe("UrbanikaNFT", function () {
 
   describe("Token URI", function () {
     it("Should update token URI successfully", async function () {
-      await urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, TOKEN_URI, EMAIL);
+      await urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, 0, TOKEN_URI, EMAIL);
 
       const newURI = "ipfs://QmNewHash/1.json";
       await expect(urbanikaNFT.updateTokenURI(1, newURI))
@@ -263,7 +263,7 @@ describe("UrbanikaNFT", function () {
     });
 
     it("Should fail to update if not owner", async function () {
-      await urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, TOKEN_URI, EMAIL);
+      await urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, 0, TOKEN_URI, EMAIL);
 
       await expect(
         urbanikaNFT.connect(investor1).updateTokenURI(1, "ipfs://new")
@@ -276,21 +276,21 @@ describe("UrbanikaNFT", function () {
       await urbanikaNFT.pause();
 
       await expect(
-        urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, TOKEN_URI, EMAIL)
+        urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, 0, TOKEN_URI, EMAIL)
       ).to.be.revertedWithCustomError(urbanikaNFT, "EnforcedPause");
 
       await urbanikaNFT.unpause();
 
       await expect(
-        urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, TOKEN_URI, EMAIL)
+        urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, 0, TOKEN_URI, EMAIL)
       ).to.not.be.reverted;
     });
   });
 
   describe("Stats", function () {
     it("Should track total investment and distributions", async function () {
-      await urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, "ipfs://stats1", EMAIL);
-      await urbanikaNFT.mint(investor2.address, INVESTMENT_AMOUNT, "ipfs://stats2", EMAIL);
+      await urbanikaNFT.mint(investor1.address, INVESTMENT_AMOUNT, 0, "ipfs://stats1", EMAIL);
+      await urbanikaNFT.mint(investor2.address, INVESTMENT_AMOUNT, 0, "ipfs://stats2", EMAIL);
 
       expect(await urbanikaNFT.totalInvestmentAmount()).to.equal(INVESTMENT_AMOUNT * 2n);
 
