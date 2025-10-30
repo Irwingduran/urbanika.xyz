@@ -58,6 +58,12 @@ if (typeof window !== 'undefined') {
 if (typeof window !== 'undefined') {
   const originalError = console.error
   const originalWarn = console.warn
+  const originalLog = console.log
+
+  // Preserve debug logs (emojis)
+  console.log = (...args) => {
+    originalLog.apply(console, args)
+  }
 
   console.error = (...args) => {
     const message = args[0]?.toString?.() || ''

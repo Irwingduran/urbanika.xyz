@@ -89,17 +89,20 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
   } = useMintNFT(chainId)
   const { data: priceData, isError: isPriceError, error: priceError } = useCalculatePrice(investmentAmount, chainId)
 
-  // Debug: Log price data
-  useEffect(() => {
-    console.log('💰 Price Debug:', {
+  // Debug: Log price data (immediate, not in useEffect)
+  if (typeof window !== 'undefined') {
+    const debugData = {
       investmentAmount,
       chainId,
       priceData: priceData?.toString(),
       isPriceError,
       priceError: priceError?.message,
       contractAddress,
-    })
-  }, [priceData, isPriceError, priceError, investmentAmount, chainId, contractAddress])
+    }
+    console.log('💰 Price Debug:', debugData)
+    // @ts-ignore - Store in window for debugging
+    window.URBANIKA_PRICE_DEBUG = debugData
+  }
 
   // Oracle price hooks
   const { priceInUSD, getETHAmount, formattedPrice } = useETHPrice(chainId)
@@ -121,20 +124,21 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
     chainId
   )
 
-  // Debug: Log token price data
-  useEffect(() => {
-    if (selectedToken !== 'ETH') {
-      console.log('💵 Token Price Debug:', {
-        selectedToken,
-        selectedTokenAddress,
-        investmentAmount,
-        chainId,
-        tokenPriceData: tokenPriceData?.toString(),
-        isTokenPriceError,
-        tokenPriceError: tokenPriceError?.message,
-      })
+  // Debug: Log token price data (immediate, not in useEffect)
+  if (typeof window !== 'undefined' && selectedToken !== 'ETH') {
+    const debugData = {
+      selectedToken,
+      selectedTokenAddress,
+      investmentAmount,
+      chainId,
+      tokenPriceData: tokenPriceData?.toString(),
+      isTokenPriceError,
+      tokenPriceError: tokenPriceError?.message,
     }
-  }, [tokenPriceData, isTokenPriceError, tokenPriceError, selectedToken, selectedTokenAddress, investmentAmount, chainId])
+    console.log('💵 Token Price Debug:', debugData)
+    // @ts-ignore - Store in window for debugging
+    window.URBANIKA_TOKEN_PRICE_DEBUG = debugData
+  }
 
   // ERC20 token hook (for USDC/USDT)
   const {
