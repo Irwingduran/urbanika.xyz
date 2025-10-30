@@ -68,7 +68,7 @@ export const config = createConfig({
 export const defaultChain = scroll
 
 // Contract addresses
-const CONTRACT_ADDRESS_MAINNET = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET || '0x1F3B7B68627f8B9BFe3db1F4a419ee20226b4a1d'
+const CONTRACT_ADDRESS_MAINNET = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET || '0x80F77c16eEfFcda7F164f500d40e4Db3fC147F1E'
 const CONTRACT_ADDRESS_SEPOLIA = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS_SEPOLIA || '0x591D218a9Ac4843FB6f571273166B5d5df99E6c0'
 
 // Contract address por defecto (mainnet)

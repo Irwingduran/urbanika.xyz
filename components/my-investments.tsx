@@ -226,7 +226,7 @@ function InvestmentCard({ tokenId }: { tokenId: number }) {
           variant="outline"
           size="sm"
           className="w-full border-brand-aqua/30 text-brand-aqua hover:bg-brand-aqua/10"
-          onClick={() => window.open(`https://scrollscan.com/token/0x1F3B7B68627f8B9BFe3db1F4a419ee20226b4a1d?a=${tokenId}`, '_blank')}
+          onClick={() => window.open(`https://scrollscan.com/token/0x80F77c16eEfFcda7F164f500d40e4Db3fC147F1E?a=${tokenId}`, '_blank')}
         >
           Ver en Scrollscan
           <ExternalLink className="ml-2 h-4 w-4" />
