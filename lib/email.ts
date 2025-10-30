@@ -6,6 +6,7 @@
  */
 
 import { Resend } from 'resend'
+import { CONTRACT_ADDRESS } from './web3/config'
 
 // Inicializar Resend con API key
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -149,7 +150,7 @@ export async function sendNFTReadyEmail(
 ): Promise<{ success: boolean; error?: string }> {
   const displayName = data.name || 'Inversionista'
   const explorerUrl = `https://scrollscan.com/tx/${data.txHash}`
-  const openseaUrl = `https://opensea.io/assets/scroll/${process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}/${data.tokenId}`
+  const openseaUrl = `https://opensea.io/assets/scroll/${CONTRACT_ADDRESS}/${data.tokenId}`
 
   const html = `
     <!DOCTYPE html>
