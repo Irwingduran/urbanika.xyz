@@ -316,27 +316,24 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
 
   // Check if approval is needed for ERC20 tokens
   useEffect(() => {
-    if (selectedToken !== 'ETH' && tokenPriceData && tokenAllowance !== undefined) {
-      const needsApprovalCheck = tokenAllowance < tokenPriceData
-      // //   tokenPriceData: tokenPriceData.toString(),
-      //   needsApproval: needsApprovalCheck
-      // })
+    if (selectedToken !== 'ETH' && cryptoAmountToSend && tokenAllowance !== undefined) {
+      const needsApprovalCheck = tokenAllowance < cryptoAmountToSend
       setNeedsApproval(needsApprovalCheck)
     } else {
       setNeedsApproval(false)
     }
-  }, [selectedToken, tokenPriceData, tokenAllowance])
+  }, [selectedToken, cryptoAmountToSend, tokenAllowance])
 
   // Handle ERC20 approval
   const handleApproveToken = async () => {
-    if (!tokenPriceData) {
-      setError("Error calculando el precio del token")
+    if (!cryptoAmountToSend) {
+      setError("Error calculando la cantidad de token")
       return
     }
 
     try {
       const tokenDecimals = TOKENS[selectedToken].decimals
-      const amountToApprove = formatUnits(tokenPriceData, tokenDecimals)
+      const amountToApprove = formatUnits(cryptoAmountToSend, tokenDecimals)
 
       await approve(amountToApprove, tokenDecimals)
     } catch (err: any) {
@@ -813,11 +810,10 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
         )
 
       case "crypto":
-        // Calcular precio según el token seleccionado
-        const currentPrice = selectedToken === 'ETH' ? priceData : tokenPriceData
+        // Mostrar cantidad de crypto a enviar
         const currentDecimals = TOKENS[selectedToken].decimals
-        const formattedPrice = currentPrice
-          ? formatUnits(currentPrice, currentDecimals)
+        const formattedPrice = cryptoAmountToSend
+          ? formatUnits(cryptoAmountToSend, currentDecimals)
           : "Calculando..."
 
         return (
