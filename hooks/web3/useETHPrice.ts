@@ -26,8 +26,15 @@ export function useETHPrice(chainId?: number) {
     isLoading,
     isError,
     error,
-    // Helper para calcular cuánto ETH necesitas para un monto en USD
-    getETHAmount: (usdAmount: number) => {
+    // Helper para calcular cuánto ETH necesitas para un monto en USD (retorna BigInt en wei)
+    getETHAmount: (usdAmount: number): bigint => {
+      if (!priceInUSD || priceInUSD === 0) return BigInt(0)
+      const ethAmount = usdAmount / priceInUSD
+      // Convertir a wei (BigInt) usando parseUnits con 18 decimales
+      return parseUnits(ethAmount.toFixed(18), 18)
+    },
+    // Helper para obtener ETH como número decimal (para display)
+    getETHAmountDecimal: (usdAmount: number): number => {
       if (!priceInUSD || priceInUSD === 0) return 0
       return usdAmount / priceInUSD
     },
@@ -40,7 +47,7 @@ export function useETHPrice(chainId?: number) {
  * Hook para obtener información de los tiers basada en el precio actual
  */
 export function useInvestmentTiers() {
-  const { priceInUSD, getETHAmount } = useETHPrice()
+  const { priceInUSD, getETHAmountDecimal } = useETHPrice()
 
   const tiers = [
     {
@@ -49,7 +56,7 @@ export function useInvestmentTiers() {
       minUSD: 0,
       maxUSD: 25,
       minETH: 0,
-      maxETH: getETHAmount(25),
+      maxETH: getETHAmountDecimal(25),
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
       borderColor: 'border-orange-200'
@@ -59,8 +66,8 @@ export function useInvestmentTiers() {
       emoji: '🥈',
       minUSD: 25,
       maxUSD: 250,
-      minETH: getETHAmount(25),
-      maxETH: getETHAmount(250),
+      minETH: getETHAmountDecimal(25),
+      maxETH: getETHAmountDecimal(250),
       color: 'text-gray-600',
       bgColor: 'bg-gray-50',
       borderColor: 'border-gray-200'
@@ -70,8 +77,8 @@ export function useInvestmentTiers() {
       emoji: '🥇',
       minUSD: 250,
       maxUSD: 500,
-      minETH: getETHAmount(250),
-      maxETH: getETHAmount(500),
+      minETH: getETHAmountDecimal(250),
+      maxETH: getETHAmountDecimal(500),
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-50',
       borderColor: 'border-yellow-200'
@@ -81,7 +88,7 @@ export function useInvestmentTiers() {
       emoji: '💎',
       minUSD: 500,
       maxUSD: null,
-      minETH: getETHAmount(500),
+      minETH: getETHAmountDecimal(500),
       maxETH: null,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
