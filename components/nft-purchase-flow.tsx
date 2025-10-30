@@ -348,9 +348,27 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 250 }: NFTPur
 
     } catch (err: any) {
       console.error('Crypto payment error:', err)
-      setError(err.message || 'Error en el proceso de pago')
-      setStep('error')
-      setProcessing(false)
+
+      // Detectar si el usuario rechazó la transacción
+      const isUserRejection =
+        err.message?.includes('User rejected') ||
+        err.message?.includes('User denied') ||
+        err.message?.includes('user rejected') ||
+        err.message?.includes('rejected the request') ||
+        err.code === 4001 || // MetaMask rejection code
+        err.code === 'ACTION_REJECTED'
+
+      if (isUserRejection) {
+        // Usuario canceló, volver al paso crypto sin mostrar error grave
+        setError('Transacción cancelada. Puedes intentar de nuevo cuando estés listo.')
+        setStep('crypto')
+        setProcessing(false)
+      } else {
+        // Error real, mostrar pantalla de error
+        setError(err.message || 'Error en el proceso de pago')
+        setStep('error')
+        setProcessing(false)
+      }
     }
   }, [
     isConnected, 
@@ -395,9 +413,26 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 250 }: NFTPur
   useEffect(() => {
     if (mintError && step === 'processing') {
       console.error('Mint error:', mintError)
-      setError(mintError.message || 'Error al mintear NFT')
-      setStep('error')
-      setProcessing(false)
+
+      // Detectar rechazo del usuario
+      const errorMessage = mintError.message || ''
+      const isUserRejection =
+        errorMessage.includes('User rejected') ||
+        errorMessage.includes('User denied') ||
+        errorMessage.includes('user rejected') ||
+        errorMessage.includes('rejected the request') ||
+        (mintError as any).code === 4001 ||
+        (mintError as any).code === 'ACTION_REJECTED'
+
+      if (isUserRejection) {
+        setError('Transacción cancelada. Puedes intentar de nuevo cuando estés listo.')
+        setStep('crypto')
+        setProcessing(false)
+      } else {
+        setError(errorMessage || 'Error al mintear NFT')
+        setStep('error')
+        setProcessing(false)
+      }
     }
   }, [mintError, step])
 
@@ -405,10 +440,24 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 250 }: NFTPur
   useEffect(() => {
     if (isTransactionError && step === 'processing') {
       console.error('Transaction error:', transactionError)
-      const errorMsg = transactionError?.message || 'Error al confirmar la transacción'
-      setError(errorMsg)
-      setStep('error')
-      setProcessing(false)
+
+      // Detectar rechazo del usuario
+      const errorMessage = transactionError?.message || ''
+      const isUserRejection =
+        errorMessage.includes('User rejected') ||
+        errorMessage.includes('User denied') ||
+        errorMessage.includes('user rejected') ||
+        errorMessage.includes('rejected the request')
+
+      if (isUserRejection) {
+        setError('Transacción cancelada. Puedes intentar de nuevo cuando estés listo.')
+        setStep('crypto')
+        setProcessing(false)
+      } else {
+        setError(errorMessage || 'Error al confirmar la transacción')
+        setStep('error')
+        setProcessing(false)
+      }
     }
   }, [isTransactionError, transactionError, step])
 
