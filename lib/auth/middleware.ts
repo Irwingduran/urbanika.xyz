@@ -4,7 +4,15 @@ import crypto from 'crypto'
 
 /**
  * Middleware de autenticación para proteger endpoints de API
- * Usa una API key secreta para autenticar las peticiones
+ *
+ * Métodos de autenticación (en orden de prioridad):
+ * 1. API key secreta (x-api-key header)
+ * 2. Same-origin requests (mismo dominio en producción o localhost en desarrollo)
+ *
+ * Seguridad adicional:
+ * - Rate limiting (configurable por endpoint)
+ * - Validación de origin/referer headers
+ * - Restricción a dominios específicos en producción
  */
 
 // Función para verificar la API key
@@ -44,25 +52,31 @@ export async function authenticateRequest(request: NextRequest): Promise<boolean
   // Verificar si es una petición interna (desde el mismo dominio)
   const origin = request.headers.get('origin')
   const host = request.headers.get('host')
+  const referer = request.headers.get('referer')
 
+  // En desarrollo, permitir peticiones desde localhost
+  if (process.env.NODE_ENV === 'development') {
+    if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+      return true
+    }
+  }
+
+  // En producción, permitir peticiones same-origin (mismo dominio)
   if (process.env.NODE_ENV === 'production') {
-    // En producción, solo permitir peticiones del mismo dominio
-    if (origin && host) {
-      const allowedOrigins = [
-        `https://${host}`,
-        'https://urbanika.xyz',
-        'https://www.urbanika.xyz'
-      ]
+    const allowedOrigins = [
+      `https://${host}`,
+      'https://urbanika.xyz',
+      'https://www.urbanika.xyz'
+    ]
 
-      if (allowedOrigins.includes(origin)) {
-        // Verificar CSRF token para peticiones del mismo dominio
-        const csrfToken = request.headers.get('x-csrf-token')
-        const sessionCsrf = request.cookies.get('csrf-token')?.value
+    // Verificar origin header
+    if (origin && allowedOrigins.some(allowed => origin === allowed)) {
+      return true
+    }
 
-        if (csrfToken && sessionCsrf && csrfToken === sessionCsrf) {
-          return true
-        }
-      }
+    // Fallback: verificar referer header (para navegadores que no envían origin)
+    if (referer && allowedOrigins.some(allowed => referer.startsWith(allowed))) {
+      return true
     }
   }
 

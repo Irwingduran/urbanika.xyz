@@ -3,9 +3,10 @@
  *
  * POST /api/ipfs/upload
  *
- * Headers:
- * - x-api-key: string (required in production)
- * - x-csrf-token: string (for same-origin requests)
+ * Seguridad:
+ * - Rate limiting: 10 requests por minuto por IP
+ * - Same-origin only: Solo acepta peticiones del mismo dominio
+ * - API key opcional: x-api-key header (para scripts externos)
  *
  * Body:
  * - tokenId: number

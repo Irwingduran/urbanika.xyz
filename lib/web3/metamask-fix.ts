@@ -60,6 +60,25 @@ if (typeof window !== 'undefined') {
   const originalWarn = console.warn
   const originalLog = console.log
 
+  // Capturar errores globales de MetaMask
+  const originalOnError = window.onerror
+  window.onerror = function(message, source, lineno, colno, error) {
+    const msgStr = message?.toString() || ''
+    if (
+      msgStr.includes('MetaMask encountered an error') ||
+      msgStr.includes('Cannot set property ethereum') ||
+      msgStr.includes('which has only a getter') ||
+      source?.includes('inpage.js')
+    ) {
+      return true // Suprimir error
+    }
+
+    if (originalOnError) {
+      return originalOnError.call(window, message, source, lineno, colno, error)
+    }
+    return false
+  }
+
   // Preserve debug logs (emojis)
   console.log = (...args) => {
     originalLog.apply(console, args)
@@ -71,7 +90,9 @@ if (typeof window !== 'undefined') {
       message.includes('Could not establish connection') ||
       message.includes('Receiving end does not exist') ||
       message.includes('setting the global Ethereum provider') ||
-      message.includes('which has only a getter')
+      message.includes('which has only a getter') ||
+      message.includes('Cannot set property ethereum') ||
+      message.includes('MetaMask encountered an error')
     ) {
       return // Ignorar estos errores
     }

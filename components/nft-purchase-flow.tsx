@@ -1,80 +1,89 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { useAccount, useChainId, useSwitchChain } from 'wagmi'
+import { scroll } from 'wagmi/chains'
+import { parseUnits, formatUnits, type Address } from 'viem'
 import {
-  CreditCard,
+  ArrowLeft,
+  Loader2,
+  CheckCircle,
+  XCircle,
   Wallet,
+  CreditCard,
   Mail,
   User,
   Phone,
-  CheckCircle,
-  XCircle,
-  Loader2,
-  ArrowLeft,
-  ArrowRight,
-  Info,
-} from "lucide-react"
-import { captureEmail, saveLeadToLocalStorage, isValidEmail } from "@/lib/email-capture"
-import { createStripeCheckout } from "@/lib/payment/stripe"
-import { SUPPORTED_CRYPTOS, type SupportedCrypto } from "@/lib/payment/crypto"
-import { useMintNFT } from "@/hooks/web3/useMintNFT"
-import { useAccount, useConnect, useChainId } from "wagmi"
-import { scroll, scrollSepolia } from "wagmi/chains"
-import { formatEther, formatUnits } from "viem"
-import { TOKENS, type SupportedToken, getTokenMetadata } from "@/lib/web3/tokens"
-import { useERC20Token } from "@/hooks/web3/useERC20"
-import { useETHPrice, useInvestmentTiers } from "@/hooks/web3/useETHPrice"
-import { useUSDtoMXN } from "@/hooks/useUSDtoMXN"
-import { getContractAddress } from "@/lib/web3/config"
-import { NetworkChecker } from "@/components/network-checker"
-import { NetworkSwitchButton } from "@/components/network-switch-button"
-import { TransactionStatus } from "@/components/transaction-status"
-import { parseWeb3Error, logWeb3Error } from "@/lib/web3/errors"
-import { parseTransactionError, getTroubleshootingSteps } from "@/lib/web3/transaction-errors"
-import {
-  trackInvestmentStarted,
-  trackInvestmentAmount,
-  trackContactInfoSubmitted,
-  trackPaymentMethodSelected,
-  trackNFTMintInitiated,
-  trackNFTMintSuccess,
-  trackNFTMintFailed,
-} from "@/lib/analytics"
+  Shield
+} from 'lucide-react'
 
-type FlowStep = "amount" | "info" | "payment-method" | "stripe" | "crypto" | "processing" | "success" | "error"
+// Hooks
+import { useUSDtoMXN } from '@/hooks/useUSDtoMXN'
+import { useMintNFT } from '@/hooks/web3/useMintNFT'
+import { useERC20Token } from '@/hooks/web3/useERC20'
+import { useETHPrice } from '@/hooks/web3/useETHPrice'
+import { getContractAddress } from '@/lib/web3/config'
+import { TOKENS, type SupportedToken } from '@/lib/web3/tokens'
+import { createStripeCheckout } from '@/lib/payment/stripe'
 
-type PurchaseFlowProps = {
+// Types
+type FlowStep = 'amount' | 'contact' | 'payment-method' | 'crypto' | 'processing' | 'success' | 'error'
+
+interface NFTPurchaseFlowProps {
   onClose: () => void
   initialAmount?: number
 }
 
-export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: PurchaseFlowProps) {
-  // Flow state - debe declararse ANTES de los hooks de Web3
-  const [step, setStep] = useState<FlowStep>("amount")
-  const [investmentAmount, setInvestmentAmount] = useState(initialAmount)
+interface ContactFormData {
+  name: string
+  email: string
+  whatsapp: string
+}
 
-  // Payment state - debe declararse ANTES de usar en hooks
-  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "crypto" | null>(null)
-  const [selectedCrypto, setSelectedCrypto] = useState<SupportedCrypto>("USDC")
+// Constants
+const MINIMUM_USD = 10
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const PHONE_REGEX = /^\+?[\d\s-()]{10,}$/
+
+// Validation functions
+const validateEmail = (email: string): boolean => EMAIL_REGEX.test(email)
+const validatePhone = (phone: string): boolean => !phone || PHONE_REGEX.test(phone)
+const validateName = (name: string): boolean => name.trim().length >= 2
+const validateAmount = (amount: number): boolean => amount >= MINIMUM_USD
+
+export default function NFTPurchaseFlow({ onClose, initialAmount = 250 }: NFTPurchaseFlowProps) {
+  // ============ Estado del Flujo ============
+  const [step, setStep] = useState<FlowStep>('amount')
+  const [amountUSD, setAmountUSD] = useState(initialAmount)
+  const [contactData, setContactData] = useState<ContactFormData>({
+    name: '',
+    email: '',
+    whatsapp: ''
+  })
+  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'crypto' | null>(null)
   const [selectedToken, setSelectedToken] = useState<SupportedToken>('USDC')
-  const [needsApproval, setNeedsApproval] = useState(false)
+  const [error, setError] = useState('')
+  const [processing, setProcessing] = useState(false)
+  const [txHash, setTxHash] = useState('')
+  const [leadId, setLeadId] = useState('')
 
-  // Track flow started
-  useEffect(() => {
-    trackInvestmentStarted()
-  }, [])
+  // ============ Hooks de Conversión ============
+  const { usdToMxn, isLoading: isLoadingExchangeRate } = useUSDtoMXN()
+  
+  // Memoized calculations
+  const amountMXN = useMemo(() => amountUSD * usdToMxn, [amountUSD, usdToMxn])
+  const MINIMUM_MXN = useMemo(() => MINIMUM_USD * usdToMxn, [usdToMxn])
 
-  // Web3 hooks - usan investmentAmount y selectedToken declarados arriba
-  const { address, isConnected, chain } = useAccount()
+  // ============ Web3 Hooks ============
+  const { address, isConnected } = useAccount()
   const chainId = useChainId()
+  const { switchChain } = useSwitchChain()
+  const contractAddress = getContractAddress(chainId)
 
-  // Get chain info from chainId (más confiable que chain.name)
-  const currentChain = chainId === scroll.id ? scroll : chainId === scrollSepolia.id ? scrollSepolia : null
-  const chainName = currentChain?.name || `Chain ID ${chainId || 'desconocido'}`
   const {
     mintNFT,
     mintNFTWithToken,
@@ -83,1098 +92,737 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
     isConfirming,
     isSuccess,
     isTransactionError,
-    transactionError,
-    transactionStatus,
     error: mintError
   } = useMintNFT(chainId)
 
-  // USD to MXN exchange rate hook (for display only)
-  const { usdToMxn, isLoading: isLoadingExchangeRate, lastUpdate } = useUSDtoMXN()
+  const { priceInUSD, getETHAmount } = useETHPrice(chainId)
 
-  // Oracle price hooks
-  const { priceInUSD, getETHAmount, formattedPrice } = useETHPrice(chainId)
-  const { getTierForAmount } = useInvestmentTiers()
-
-  // Get contract address for ERC20 approvals
-  const contractAddress = getContractAddress(chainId)
-
-  // Token-specific metadata and address based on current chain
-  const currentTokenMetadata = getTokenMetadata(selectedToken, chainId)
-  const selectedTokenAddress = currentTokenMetadata.address || ''
-
-  // Calculate crypto amounts to send based on USD investment
-  const cryptoAmountToSend = (() => {
-    if (selectedToken === 'ETH') {
-      // For ETH: convert USD to ETH using oracle
-      return getETHAmount(investmentAmount)
-    } else {
-      // For stablecoins (USDC/USDT): 1 USD ≈ 1 token
-      // USDC/USDT have 6 decimals
-      const tokenDecimals = TOKENS[selectedToken].decimals
-      return BigInt(Math.floor(investmentAmount * (10 ** tokenDecimals)))
-    }
-  })()
-
-  // ERC20 token hook (for USDC/USDT)
+  // ERC20 token hook para USDC/USDT
+  const tokenAddress = selectedToken !== 'ETH' ? TOKENS[selectedToken]?.address : ''
   const {
     balance: tokenBalance,
     allowance: tokenAllowance,
     approve,
     isApproving,
-    isConfirmingApproval,
-    isApproveSuccess,
-  } = useERC20Token(selectedTokenAddress, contractAddress)
+  } = useERC20Token(tokenAddress as Address, contractAddress)
 
-  // User info
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [whatsapp, setWhatsapp] = useState("")
-
-  // Status
-  const [error, setError] = useState("")
-  const [processing, setProcessing] = useState(false)
-  const [leadId, setLeadId] = useState("")
-  const [txHash, setTxHash] = useState<string>("")
-
-  // Calculations
-  const expectedReturn = investmentAmount * 1.5
-  // Ahora trabajamos directamente en USD
-  const amountUSD = investmentAmount // El monto ya está en USD
-
-  // Conversión USD a MXN (usando tipo de cambio real de API)
-  const amountMXN = investmentAmount * usdToMxn
-  const expectedReturnMXN = expectedReturn * usdToMxn
-
-  // Preset amounts in USD based on new tiers
-  const presetAmounts = [10, 25, 50, 100, 250, 500, 1000]
-
-  useEffect(() => {
-    // Save progress to localStorage
-    saveLeadToLocalStorage({
-      email,
-      name,
-      investmentAmount,
-      paymentMethod: paymentMethod || undefined,
-      status: "interested",
-      timestamp: new Date().toISOString(),
-      metadata: { whatsapp },
-    })
-  }, [email, name, whatsapp, investmentAmount, paymentMethod])
-
-  // Handle successful mint
-  useEffect(() => {
-    if (isSuccess && hash) {
-      trackNFTMintSuccess(investmentAmount, hash, chainId)
-      setTxHash(hash)
-      setStep("success")
-      setProcessing(false)
-
-      // Actualizar lead en base de datos
-      if (leadId && hash) {
-        fetch('/api/leads/update-mint', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            leadId,
-            mintTxHash: hash,
-            tokenId: null, // Se puede obtener del evento del contrato si es necesario
-          }),
-        }).catch(() => {})
+  // ============ Calcular cantidad de crypto a enviar ============
+  const cryptoAmountToSend = useMemo(() => {
+    try {
+      if (selectedToken === 'ETH') {
+        return getETHAmount(amountUSD)
+      } else {
+        const tokenConfig = TOKENS[selectedToken]
+        if (!tokenConfig) {
+          console.error(`Token configuration not found for: ${selectedToken}`)
+          return 0
+        }
+        return parseUnits(amountUSD.toString(), tokenConfig.decimals)
       }
+    } catch (error) {
+      console.error('Error calculating crypto amount:', error)
+      return 0
     }
-  }, [isSuccess, hash, isPending, isConfirming, isTransactionError, transactionStatus, investmentAmount, chainId, leadId, step])
+  }, [selectedToken, amountUSD, getETHAmount])
 
-  // Debug: Crypto amount calculation
-  useEffect(() => {
-    const debugData = {
-      investmentAmount,
-      chainId,
-      selectedToken,
-      cryptoAmountToSend: cryptoAmountToSend?.toString(),
-      priceInUSD,
-      contractAddress,
-    }
-    console.log('💰 Crypto Amount Debug:', debugData)
+  // ============ Validaciones ============
+  const isValidAmount = validateAmount(amountUSD)
+  const isValidEmail = validateEmail(contactData.email)
+  const isValidPhone = validatePhone(contactData.whatsapp)
+  const isValidName = validateName(contactData.name)
+  const isValidContact = isValidName && isValidEmail && isValidPhone
 
-    // Store in window for manual inspection
-    if (typeof window !== 'undefined') {
-      // @ts-ignore
-      window.URBANIKA_DEBUG = debugData
-    }
-  }, [investmentAmount, chainId, selectedToken, cryptoAmountToSend, priceInUSD, contractAddress])
+  // Verificar si necesita approval para ERC20
+  const needsApproval = useMemo(() => 
+    selectedToken !== 'ETH' &&
+    tokenAllowance !== undefined &&
+    cryptoAmountToSend > 0 &&
+    cryptoAmountToSend > tokenAllowance,
+    [selectedToken, tokenAllowance, cryptoAmountToSend]
+  )
 
-  // Handle mint errors with better parsing
-  useEffect(() => {
-    if (mintError) {
-      logWeb3Error(mintError, 'NFT Mint')
-      const parsed = parseWeb3Error(mintError)
-      trackNFTMintFailed(investmentAmount, parsed.type, parsed.message)
-      setError(parsed.message)
-      setStep("error")
-      setProcessing(false)
-    }
-  }, [mintError, investmentAmount])
+  // ============ Handlers ============
+  const updateContactData = useCallback((field: keyof ContactFormData, value: string) => {
+    setContactData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }, [])
 
-  // Handle transaction failures (when transaction is mined but reverted)
-  useEffect(() => {
-    if (isTransactionError && hash) {
-      const parsed = parseTransactionError(transactionError)
-      const steps = getTroubleshootingSteps(parsed.type)
-
-      let errorMessage = parsed.userMessage
-
-      // Agregar link al explorer para que el usuario pueda ver la transacción
-      if (hash) {
-        errorMessage += `\n\nVer transacción: https://scrollscan.com/tx/${hash}`
-      }
-
-      // Agregar pasos de troubleshooting
-      if (steps.length > 0) {
-        errorMessage += '\n\nQué hacer:\n' + steps.map((step, i) => `${i + 1}. ${step}`).join('\n')
-      }
-
-      trackNFTMintFailed(investmentAmount, parsed.type, parsed.userMessage)
-      setError(errorMessage)
-      setStep("error")
-      setProcessing(false)
-    }
-  }, [isTransactionError, hash, transactionError, transactionStatus, investmentAmount])
-
-  const validateAmount = () => {
-    if (investmentAmount < 10) {
-      setError("El monto mínimo de inversión es $10 USD")
-      return false
-    }
-    setError("")
-    return true
-  }
-
-  const validateInfo = () => {
-    if (!name.trim()) {
-      setError("Por favor ingresa tu nombre")
-      return false
-    }
-    if (!isValidEmail(email)) {
-      setError("Por favor ingresa un email válido")
-      return false
-    }
-    if (!whatsapp.trim()) {
-      setError("Por favor ingresa tu número de WhatsApp")
-      return false
-    }
-    setError("")
-    return true
-  }
-
-  const handleCaptureEmail = async () => {
-    if (!validateInfo()) return
-
-    trackContactInfoSubmitted(investmentAmount)
-    setProcessing(true)
-    const result = await captureEmail({
-      email,
-      name,
-      investmentAmount,
-      status: "interested",
-      timestamp: new Date().toISOString(),
-      metadata: { whatsapp },
-    })
-
-    if (result.success && result.leadId) {
-      setLeadId(result.leadId)
-      setStep("payment-method")
-    } else {
-      setError(result.error || "Error al capturar información")
-    }
-    setProcessing(false)
-  }
-
-  const handleStripePayment = async () => {
-    setProcessing(true)
-    setStep("processing")
-
-    const result = await createStripeCheckout({
-      amount: investmentAmount,
-      email,
-      name,
-      nftMetadata: {
-        investmentAmount,
-        expectedReturn,
-        timestamp: new Date().toISOString(),
-      },
-    })
-
-    if (result.success && result.checkoutUrl) {
-      // Redirect to Stripe checkout
-      window.location.href = result.checkoutUrl
-    } else {
-      setError(result.error || "Error al crear sesión de pago")
-      setStep("error")
-    }
-    setProcessing(false)
-  }
-
-  // Check if approval is needed for ERC20 tokens
-  useEffect(() => {
-    if (selectedToken !== 'ETH' && cryptoAmountToSend && tokenAllowance !== undefined) {
-      const needsApprovalCheck = tokenAllowance < cryptoAmountToSend
-      setNeedsApproval(needsApprovalCheck)
-    } else {
-      setNeedsApproval(false)
-    }
-  }, [selectedToken, cryptoAmountToSend, tokenAllowance])
-
-  // Handle ERC20 approval
-  const handleApproveToken = async () => {
-    if (!cryptoAmountToSend) {
-      setError("Error calculando la cantidad de token")
-      return
-    }
+  const handleNextStep = useCallback(async () => {
+    setError('') // Clear previous errors
 
     try {
-      const tokenDecimals = TOKENS[selectedToken].decimals
-      const amountToApprove = formatUnits(cryptoAmountToSend, tokenDecimals)
-
-      await approve(amountToApprove, tokenDecimals)
-    } catch (err: any) {
-      logWeb3Error(err, 'Token Approval')
-      const parsed = parseWeb3Error(err)
-      setError(parsed.message)
+      if (step === 'amount') {
+        if (!isValidAmount) {
+          setError(`El monto mínimo es $${MINIMUM_USD} USD (~${MINIMUM_MXN.toFixed(0)} MXN)`)
+          return
+        }
+        setStep('contact')
+      } else if (step === 'contact') {
+        if (!isValidContact) {
+          const errors = []
+          if (!isValidName) errors.push('nombre completo (mínimo 2 caracteres)')
+          if (!isValidEmail) errors.push('correo electrónico válido')
+          if (!isValidPhone) errors.push('número de WhatsApp válido (opcional)')
+          setError(`Por favor completa: ${errors.join(', ')}`)
+          return
+        }
+        
+        await saveLeadToDatabase()
+        setStep('payment-method')
+      } else if (step === 'payment-method') {
+        if (!paymentMethod) {
+          setError('Selecciona un método de pago')
+          return
+        }
+        if (paymentMethod === 'stripe') {
+          await handleStripePayment()
+        } else {
+          setStep('crypto')
+        }
+      }
+    } catch (err) {
+      console.error('Error in handleNextStep:', err)
+      setError('Ha ocurrido un error inesperado. Por favor intenta de nuevo.')
     }
-  }
+  }, [step, isValidAmount, isValidContact, paymentMethod, amountUSD, MINIMUM_MXN, contactData])
 
-  const handleCryptoPayment = async () => {
-    // + '...',
-    //   chainId: chain?.id,
-    //   needsApproval
-    // })
-
-    // Verificar que la wallet esté conectada
-    if (!isConnected || !address) {
-      setError("Por favor conecta tu wallet primero")
-      setStep("error")
-      return
-    }
-
-    // Verificar que esté en la red correcta (Scroll Mainnet)
-    if (chainId !== scroll.id) {
-      setError(`Por favor cambia a Scroll Mainnet en tu wallet. Red actual: ${chainName}`)
-      setStep("error")
-      return
-    }
-
-    // Verificar que tengamos cantidad válida para enviar
-    if (!cryptoAmountToSend || cryptoAmountToSend === 0n) {
-      setError("Error calculando cantidad de crypto a enviar. Intenta con otro monto.")
-      setStep("error")
-      return
-    }
-
-    console.log('🔍 Payment Debug:', {
-      selectedToken,
-      investmentAmount,
-      cryptoAmountToSend: cryptoAmountToSend.toString(),
-      priceInUSD,
-    })
-
-    // Para tokens ERC20, verificar que haya suficiente allowance
-    if (selectedToken !== 'ETH' && needsApproval) {
-      setError("Por favor aprueba el gasto del token primero")
-      return
-    }
-
-    // trackNFTMintInitiated(investmentAmount, 'crypto')
-    setProcessing(true)
-    setStep("processing")
-    setError("")
-
+  const saveLeadToDatabase = useCallback(async () => {
     try {
-      // 1. Generar tokenID temporal para IPFS
-      const tempTokenId = Date.now()
-
-      // 2. Subir imagen + metadata a IPFS
-      const ipfsResponse = await fetch('/api/ipfs/upload', {
+      const response = await fetch('/api/leads/capture', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify({
-          tokenId: tempTokenId,
-          investmentAmount,
-          expectedReturn,
-          investor: address,
-          useDefaultImage: true,
+          email: contactData.email,
+          name: contactData.name,
+          investmentAmount: amountUSD,
+          status: 'interested',
+          metadata: { 
+            whatsapp: contactData.whatsapp,
+            timestamp: new Date().toISOString()
+          },
         }),
       })
 
-      const ipfsData = await ipfsResponse.json()
-
-      if (!ipfsData.success || !ipfsData.tokenURI) {
-        throw new Error(ipfsData.error || 'Error subiendo a IPFS')
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      // 3. Mintear NFT según el token seleccionado
+      const data = await response.json()
+      if (data.id) {
+        setLeadId(data.id)
+      }
+    } catch (err) {
+      console.error('Error saving lead:', err)
+      // No throw error here to not block user flow
+    }
+  }, [contactData, amountUSD])
+
+  const handleStripePayment = useCallback(async () => {
+    setProcessing(true)
+    try {
+      const { url, error: stripeError } = await createStripeCheckout({
+        amount: amountUSD,
+        customerEmail: contactData.email,
+        customerName: contactData.name,
+      })
+
+      if (stripeError) throw new Error(stripeError)
+      if (url) {
+        // Safe redirect
+        window.location.assign(url)
+      }
+    } catch (err: any) {
+      console.error('Stripe payment error:', err)
+      setError(err.message || 'Error al crear sesión de pago')
+      setStep('error')
+    } finally {
+      setProcessing(false)
+    }
+  }, [amountUSD, contactData])
+
+  const handleApproveToken = useCallback(async () => {
+    if (!cryptoAmountToSend || cryptoAmountToSend === 0) return
+
+    setProcessing(true)
+    setError('')
+    
+    try {
+      const tokenConfig = TOKENS[selectedToken]
+      if (!tokenConfig) {
+        throw new Error(`Configuración del token ${selectedToken} no encontrada`)
+      }
+
+      const amountFormatted = formatUnits(cryptoAmountToSend, tokenConfig.decimals)
+      await approve(amountFormatted, tokenConfig.decimals)
+    } catch (err: any) {
+      console.error('Token approval error:', err)
+      setError(err.message || 'Error al aprobar token')
+    } finally {
+      setProcessing(false)
+    }
+  }, [cryptoAmountToSend, selectedToken, approve])
+
+  const handleCryptoPayment = useCallback(async () => {
+    // Validaciones exhaustivas
+    if (!isConnected || !address) {
+      setError('Por favor conecta tu wallet')
+      return
+    }
+
+    if (chainId !== scroll.id) {
+      try {
+        await switchChain({ chainId: scroll.id })
+        // Esperar un momento para que la red cambie
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      } catch (err) {
+        setError('Por favor cambia manualmente a Scroll Mainnet')
+        return
+      }
+    }
+
+    if (!cryptoAmountToSend || cryptoAmountToSend === 0) {
+      setError('Error calculando cantidad de crypto. Por favor verifica el monto.')
+      return
+    }
+
+    if (needsApproval) {
+      setError('Por favor aprueba el gasto del token primero')
+      return
+    }
+
+    setProcessing(true)
+    setStep('processing')
+    setError('')
+
+    try {
+      // 1. Subir metadata a IPFS
+      const ipfsResponse = await fetch('/api/ipfs/upload', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+          tokenId: Date.now(),
+          investmentAmount: amountUSD,
+          expectedReturn: amountUSD * 1.5,
+          investor: address,
+          useDefaultImage: true,
+          timestamp: new Date().toISOString()
+        }),
+      })
+
+      if (!ipfsResponse.ok) {
+        throw new Error(`Error en upload IPFS: ${ipfsResponse.status}`)
+      }
+
+      const ipfsData = await ipfsResponse.json()
+      if (!ipfsData.success || !ipfsData.tokenURI) {
+        throw new Error('Error subiendo metadata a IPFS')
+      }
+
+      // 2. Mintear NFT
       if (selectedToken === 'ETH') {
-        // Pago en ETH (nativo)
         await mintNFT({
           tokenURI: ipfsData.tokenURI,
           ethAmount: cryptoAmountToSend,
         })
       } else {
-        // CRITICAL: Verificar balance y allowance ANTES de mintear
-        const tokenDecimals = TOKENS[selectedToken].decimals
-        const balanceFormatted = tokenBalance ? formatUnits(tokenBalance, tokenDecimals) : '0'
-        const allowanceFormatted = tokenAllowance ? formatUnits(tokenAllowance, tokenDecimals) : '0'
-        const amountFormatted = formatUnits(cryptoAmountToSend, tokenDecimals)
-
-        const balanceNum = parseFloat(balanceFormatted)
-        const allowanceNum = parseFloat(allowanceFormatted)
-        const amountNum = parseFloat(amountFormatted)
-
-        if (balanceNum < amountNum) {
-          throw new Error(`Balance insuficiente. Necesitas ${amountFormatted} ${selectedToken} pero solo tienes ${balanceFormatted}`)
+        const tokenConfig = TOKENS[selectedToken]
+        if (!tokenConfig) {
+          throw new Error(`Token ${selectedToken} no soportado`)
         }
 
-        if (allowanceNum < amountNum) {
-          throw new Error(`Allowance insuficiente. Por favor aprueba ${amountFormatted} ${selectedToken} o más.`)
-        }
-
-        // Pago en ERC20 (USDC/USDT)
         await mintNFTWithToken({
           tokenAmount: cryptoAmountToSend,
           tokenURI: ipfsData.tokenURI,
-          tokenAddress: selectedTokenAddress,
+          tokenAddress: tokenConfig.address,
         })
       }
 
-      // El éxito se maneja en el useEffect
     } catch (err: any) {
-      logWeb3Error(err, 'Crypto Payment')
-      const parsed = parseWeb3Error(err)
-      setError(parsed.message)
-      setStep("error")
+      console.error('Crypto payment error:', err)
+      setError(err.message || 'Error en el proceso de pago')
+      setStep('error')
       setProcessing(false)
     }
-  }
+  }, [
+    isConnected, 
+    address, 
+    chainId, 
+    switchChain, 
+    cryptoAmountToSend, 
+    needsApproval, 
+    amountUSD, 
+    selectedToken, 
+    mintNFT, 
+    mintNFTWithToken
+  ])
 
+  // ============ Effects ============
+  // Manejar éxito de transacción
+  useEffect(() => {
+    if (isSuccess && hash) {
+      setTxHash(hash)
+      setStep('success')
+      setProcessing(false)
+
+      // Actualizar lead con tx hash (no bloqueante)
+      if (leadId) {
+        fetch('/api/leads/update-mint', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({ 
+            leadId, 
+            mintTxHash: hash,
+            status: 'completed'
+          }),
+        }).catch(console.error)
+      }
+    }
+  }, [isSuccess, hash, leadId])
+
+  // Manejar errores de mint
+  useEffect(() => {
+    if (mintError && step === 'processing') {
+      console.error('Mint error:', mintError)
+      setError(mintError.message || 'Error al mintear NFT')
+      setStep('error')
+      setProcessing(false)
+    }
+  }, [mintError, step])
+
+  // Prevenir navegación accidental durante procesamiento
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (processing || step === 'processing') {
+        e.preventDefault()
+        e.returnValue = 'Tienes una transacción en proceso. ¿Estás seguro de que quieres salir?'
+        return e.returnValue
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [processing, step])
+
+  // ============ Render ============
   const renderStep = () => {
     switch (step) {
-      case "amount":
+      case 'amount':
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <h3 className="text-2xl font-bold text-brand-dark mb-2">¿Cuánto quieres invertir?</h3>
-              <p className="text-gray-600">Elige un monto o ingresa tu propia cantidad</p>
-            </div>
-
-            {/* Monto seleccionado en MXN (destacado) */}
-            <Card className="bg-gradient-to-r from-brand-aqua/10 to-blue-50 border-brand-aqua/30">
-              <CardContent className="p-6">
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-1">Inversión aproximada</p>
-                  {isLoadingExchangeRate ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="h-6 w-6 animate-spin text-brand-aqua" />
-                      <p className="text-lg text-gray-500">Obteniendo tipo de cambio...</p>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-4xl font-bold text-brand-dark mb-2">
-                        ${amountMXN.toLocaleString()} <span className="text-2xl">MXN</span>
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        (${investmentAmount} USD)
-                      </p>
-                      <p className="text-xs text-gray-400 mt-2">
-                        Tipo de cambio: ${usdToMxn.toFixed(2)} MXN/USD
-                        {lastUpdate && (
-                          <span className="ml-2">
-                            • Actualizado: {lastUpdate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        )}
-                      </p>
-                      {priceInUSD > 0 && (
-                        <p className="text-xs text-brand-aqua mt-1">
-                          Precio ETH: {formattedPrice} (Oracle de Chainlink)
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Preset amounts en USD */}
-            <div>
-              <Label className="text-sm text-gray-600 mb-3 block">Montos rápidos (USD)</Label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {presetAmounts.map((amount) => (
-                  <Button
-                    key={amount}
-                    variant={investmentAmount === amount ? "default" : "outline"}
-                    onClick={() => setInvestmentAmount(amount)}
-                    className={`h-20 ${
-                      investmentAmount === amount
-                        ? "bg-brand-aqua text-white"
-                        : "border-brand-aqua/30 hover:border-brand-aqua"
-                    }`}
-                    disabled={isLoadingExchangeRate}
-                  >
-                    <div className="text-center">
-                      <div className="font-bold text-lg">${amount >= 1000 ? `${(amount / 1000).toFixed(1)}k` : amount}</div>
-                      <div className="text-xs opacity-75">USD</div>
-                      {!isLoadingExchangeRate && (
-                        <div className="text-xs opacity-60 mt-1">≈ ${(amount * usdToMxn).toLocaleString()} MXN</div>
-                      )}
-                    </div>
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Custom amount */}
-            <div className="space-y-2">
-              <Label htmlFor="custom-amount">Monto personalizado (USD)</Label>
-              <Input
-                id="custom-amount"
-                type="number"
-                value={investmentAmount}
-                onChange={(e) => setInvestmentAmount(Number(e.target.value))}
-                min="10"
-                step="5"
-                className="text-lg font-semibold"
-                disabled={isLoadingExchangeRate}
-              />
-              <p className="text-sm text-gray-500">
-                Mínimo: $10 USD {!isLoadingExchangeRate && `(≈ $${(10 * usdToMxn).toFixed(0)} MXN)`}
-              </p>
-            </div>
-
-            {/* Expected return */}
-            <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Retorno esperado (1.5x)</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      ${expectedReturnMXN.toLocaleString()} MXN
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      (${expectedReturn.toFixed(2)} USD)
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-xs text-gray-500">
-                        Tier: {getTierForAmount(investmentAmount).emoji} {getTierForAmount(investmentAmount).name}
-                      </p>
-                      {priceInUSD > 0 && (
-                        <p className="text-xs text-gray-400">
-                          ({getETHAmount(investmentAmount).toFixed(4)} ETH)
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <CheckCircle className="h-8 w-8 text-green-500" />
-                </div>
-              </CardContent>
-            </Card>
-
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-
-            <Button
-              onClick={() => validateAmount() && setStep("info")}
-              className="w-full h-12 bg-brand-aqua hover:bg-brand-aqua/90 text-white font-semibold"
-            >
-              Continuar
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        )
-
-      case "info":
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-2xl font-bold text-brand-dark mb-2">Información de contacto</h3>
-              <p className="text-gray-600">Para enviarte tu NFT y mantenerte informado</p>
+              <h3 className="text-2xl font-bold mb-2">¿Cuánto quieres invertir?</h3>
+              <p className="text-gray-600">Inversión mínima: ${MINIMUM_USD} USD</p>
             </div>
 
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Nombre completo
-                </Label>
+              <div>
+                <Label htmlFor="investment-amount">Monto en USD</Label>
                 <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Juan Pérez"
-                  className="text-lg"
+                  id="investment-amount"
+                  type="number"
+                  value={amountUSD}
+                  onChange={(e) => {
+                    const value = Number(e.target.value)
+                    if (!isNaN(value) && value >= 0) {
+                      setAmountUSD(value)
+                    }
+                  }}
+                  min={MINIMUM_USD}
+                  step={10}
+                  aria-describedby="amount-error"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email" className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="tu@email.com"
-                  className="text-lg"
-                />
-                <p className="text-xs text-gray-500">Tu NFT será entregado a este email</p>
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm text-gray-700">
+                  <strong>${amountUSD} USD</strong> ≈{' '}
+                  <strong>
+                    {isLoadingExchangeRate ? 'Calculando...' : `${amountMXN.toFixed(2)} MXN`}
+                  </strong>
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Retorno esperado: {(amountMXN * 1.5).toFixed(2)} MXN
+                </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="whatsapp" className="flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  WhatsApp
-                </Label>
-                <Input
-                  id="whatsapp"
-                  type="tel"
-                  value={whatsapp}
-                  onChange={(e) => setWhatsapp(e.target.value)}
-                  placeholder="+52 123 456 7890"
-                  className="text-lg"
-                />
-                <p className="text-xs text-gray-500">Para enviarte actualizaciones sobre tu inversión</p>
-              </div>
+              {error && (
+                <p id="amount-error" className="text-red-600 text-sm" role="alert">
+                  {error}
+                </p>
+              )}
 
-              {/* Investment summary */}
-              <Card className="bg-gray-50">
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-600">Inversión</span>
-                    <span className="font-bold">${investmentAmount.toLocaleString()} MXM</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Retorno esperado</span>
-                    <span className="font-bold text-green-600">${expectedReturn.toLocaleString()} MXM</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setStep("amount")} className="flex-1">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Atrás
-              </Button>
-              <Button
-                onClick={handleCaptureEmail}
-                disabled={processing}
-                className="flex-1 bg-brand-aqua hover:bg-brand-aqua/90 text-white font-semibold"
+              <Button 
+                onClick={handleNextStep} 
+                className="w-full"
+                disabled={isLoadingExchangeRate}
               >
-                {processing ? (
+                {isLoadingExchangeRate ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Procesando...
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Calculando...
                   </>
                 ) : (
-                  <>
-                    Continuar
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
+                  'Continuar'
                 )}
               </Button>
             </div>
           </div>
         )
 
-      case "payment-method":
+      case 'contact':
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <h3 className="text-2xl font-bold text-brand-dark mb-2">Elige tu método de pago</h3>
-              <p className="text-gray-600">Paga con tarjeta o criptomonedas</p>
+              <h3 className="text-2xl font-bold mb-2">Tus datos de contacto</h3>
+              <p className="text-gray-600">Para enviarte el recibo y actualizaciones</p>
             </div>
 
             <div className="space-y-4">
-              {/* Stripe option */}
-              <Card
-                className={`cursor-pointer transition-all hover:shadow-lg ${
-                  paymentMethod === "stripe"
-                    ? "border-2 border-brand-aqua bg-brand-aqua/5"
-                    : "border border-gray-200"
-                }`}
-                onClick={() => setPaymentMethod("stripe")}
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 bg-blue-100 rounded-full">
-                      <CreditCard className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-lg mb-1">Tarjeta de crédito/débito</h4>
-                      <p className="text-sm text-gray-600 mb-2">Pago seguro con Stripe</p>
-                      <div className="flex gap-2 text-xs text-gray-500">
-                        <span>✓ Visa</span>
-                        <span>✓ Mastercard</span>
-                        <span>✓ AMEX</span>
-                      </div>
-                      <div className="mt-2 text-sm font-semibold text-brand-dark">
-                        ${investmentAmount.toLocaleString()} MXM (≈ ${amountUSD.toFixed(2)} USD)
-                      </div>
-                    </div>
-                    {paymentMethod === "stripe" && <CheckCircle className="h-6 w-6 text-brand-aqua" />}
-                  </div>
-                </CardContent>
-              </Card>
+              <div>
+                <Label htmlFor="contact-name">Nombre completo</Label>
+                <div className="flex items-center gap-2">
+                  <User className="w-5 h-5 text-gray-400" />
+                  <Input
+                    id="contact-name"
+                    value={contactData.name}
+                    onChange={(e) => updateContactData('name', e.target.value)}
+                    placeholder="Juan Pérez"
+                    aria-invalid={!isValidName && contactData.name !== ''}
+                  />
+                </div>
+                {!isValidName && contactData.name !== '' && (
+                  <p className="text-red-500 text-xs mt-1">Mínimo 2 caracteres</p>
+                )}
+              </div>
 
-              {/* Crypto option */}
-              <Card
-                className={`cursor-pointer transition-all hover:shadow-lg ${
-                  paymentMethod === "crypto"
-                    ? "border-2 border-brand-yellow bg-brand-yellow/5"
-                    : "border border-gray-200"
-                }`}
-                onClick={() => setPaymentMethod("crypto")}
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 bg-purple-100 rounded-full">
-                      <Wallet className="h-6 w-6 text-purple-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-lg mb-1">Criptomonedas</h4>
-                      <p className="text-sm text-gray-600 mb-2">Paga con ETH, USDC o USDT en Scroll Mainnet</p>
-                      <div className="flex gap-2 text-xs text-gray-500">
-                        <span>✓ ETH</span>
-                        <span>✓ USDC</span>
-                        <span>✓ USDT</span>
-                      </div>
-                      <div className="mt-2 text-sm font-semibold text-brand-dark">
-                        ≈ ${amountUSD.toFixed(2)} USD en crypto
-                      </div>
-                      <div className="mt-1 text-xs text-gray-500">
-                        Red: Scroll Mainnet
-                      </div>
-                    </div>
-                    {paymentMethod === "crypto" && <CheckCircle className="h-6 w-6 text-brand-yellow" />}
-                  </div>
-                </CardContent>
-              </Card>
+              <div>
+                <Label htmlFor="contact-email">Correo electrónico</Label>
+                <div className="flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-gray-400" />
+                  <Input
+                    id="contact-email"
+                    type="email"
+                    value={contactData.email}
+                    onChange={(e) => updateContactData('email', e.target.value)}
+                    placeholder="tu@email.com"
+                    aria-invalid={!isValidEmail && contactData.email !== ''}
+                  />
+                </div>
+                {!isValidEmail && contactData.email !== '' && (
+                  <p className="text-red-500 text-xs mt-1">Formato de email inválido</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="contact-whatsapp">WhatsApp (opcional)</Label>
+                <div className="flex items-center gap-2">
+                  <Phone className="w-5 h-5 text-gray-400" />
+                  <Input
+                    id="contact-whatsapp"
+                    value={contactData.whatsapp}
+                    onChange={(e) => updateContactData('whatsapp', e.target.value)}
+                    placeholder="+52 123 456 7890"
+                    aria-invalid={!isValidPhone && contactData.whatsapp !== ''}
+                  />
+                </div>
+                {!isValidPhone && contactData.whatsapp !== '' && (
+                  <p className="text-red-500 text-xs mt-1">Formato de teléfono inválido</p>
+                )}
+              </div>
+
+              {error && (
+                <p className="text-red-600 text-sm" role="alert">
+                  {error}
+                </p>
+              )}
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setStep('amount')}>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Atrás
+                </Button>
+                <Button 
+                  onClick={handleNextStep} 
+                  className="flex-1"
+                  disabled={!isValidContact}
+                >
+                  Continuar
+                </Button>
+              </div>
+            </div>
+          </div>
+        )
+
+      case 'payment-method':
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h3 className="text-2xl font-bold mb-2">Método de pago</h3>
+              <p className="text-gray-600">Elige cómo quieres pagar</p>
             </div>
 
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setStep("info")} className="flex-1">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Atrás
-              </Button>
-              <Button
-                onClick={() => {
-                  if (paymentMethod === "stripe") {
-                    trackPaymentMethodSelected('stripe')
-                    handleStripePayment()
-                  } else if (paymentMethod === "crypto") {
-                    trackPaymentMethodSelected('crypto')
-                    setStep("crypto")
+            <div className="space-y-4">
+              <Card
+                className={`cursor-pointer transition-all ${
+                  paymentMethod === 'stripe' 
+                    ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500 ring-opacity-50' 
+                    : 'hover:border-blue-300'
+                }`}
+                onClick={() => setPaymentMethod('stripe')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    setPaymentMethod('stripe')
                   }
                 }}
-                disabled={!paymentMethod || processing}
-                className="flex-1 bg-gradient-to-r from-brand-aqua to-brand-yellow text-white font-semibold"
+                aria-pressed={paymentMethod === 'stripe'}
               >
-                {processing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Procesando...
-                  </>
-                ) : (
-                  <>
-                    Proceder al pago
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </div>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-1">
+                    <CreditCard className="w-6 h-6" />
+                    <div>
+                      <p className="font-semibold">Tarjeta de crédito/débito</p>
+                      <p className="text-sm text-gray-600">Pago seguro con Stripe</p>
+                    </div>
+                  </div>
+                  <Shield className="w-5 h-5 text-green-600" />
+                </CardContent>
+              </Card>
 
-            <Card className="bg-blue-50 border-blue-200">
-              <CardContent className="p-4 flex gap-3">
-                <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-gray-700">
-                  <p className="font-semibold mb-1">Información importante:</p>
-                  <ul className="space-y-1 text-xs">
-                    <li>• Tu NFT será acuñado después de confirmar el pago</li>
-                    <li>• Podrás ver tu NFT en tu wallet inmediatamente</li>
-                    <li>• El proceso puede tomar 5-10 minutos</li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
+              <Card
+                className={`cursor-pointer transition-all ${
+                  paymentMethod === 'crypto'
+                    ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500 ring-opacity-50'
+                    : 'hover:border-blue-300'
+                }`}
+                onClick={() => setPaymentMethod('crypto')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    setPaymentMethod('crypto')
+                  }
+                }}
+                aria-pressed={paymentMethod === 'crypto'}
+              >
+                <CardContent className="p-4 flex items-center gap-3">
+                  <Wallet className="w-6 h-6" />
+                  <div>
+                    <p className="font-semibold">Criptomonedas</p>
+                    <p className="text-sm text-gray-600">ETH, USDC o USDT en Scroll</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {error && (
+                <p className="text-red-600 text-sm" role="alert">
+                  {error}
+                </p>
+              )}
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setStep('contact')}>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Atrás
+                </Button>
+                <Button 
+                  onClick={handleNextStep} 
+                  className="flex-1" 
+                  disabled={!paymentMethod || processing}
+                >
+                  {processing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Procesando...
+                    </>
+                  ) : (
+                    'Continuar'
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
         )
 
-      case "crypto":
-        // Mostrar cantidad de crypto a enviar
-        const currentDecimals = TOKENS[selectedToken].decimals
-        const formattedPrice = cryptoAmountToSend
-          ? formatUnits(cryptoAmountToSend, currentDecimals)
-          : "Calculando..."
-
+      case 'crypto':
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <h3 className="text-2xl font-bold text-brand-dark mb-2">Pago con criptomonedas</h3>
-              <p className="text-gray-600">Elige tu moneda y conecta tu wallet</p>
+              <h3 className="text-2xl font-bold mb-2">Pago con criptomonedas</h3>
+              <p className="text-gray-600">Conecta tu wallet y completa el pago</p>
             </div>
 
-            {/* Token Selector */}
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">Selecciona tu moneda de pago:</Label>
-              <div className="grid grid-cols-3 gap-3">
-                {(['ETH', 'USDC', 'USDT'] as SupportedToken[]).map((token) => {
-                  const tokenInfo = TOKENS[token]
-                  const isSelected = selectedToken === token
-                  const isRecommended = token === 'USDC'
-
-                  return (
-                    <Card
+            <div className="space-y-4">
+              {/* Token selector */}
+              <div>
+                <Label>Selecciona tu moneda</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['ETH', 'USDC', 'USDT'] as SupportedToken[]).map((token) => (
+                    <Button
                       key={token}
-                      className={`cursor-pointer transition-all hover:shadow-md relative ${
-                        isSelected
-                          ? "border-2 border-brand-aqua bg-brand-aqua/5"
-                          : "border border-gray-200 hover:border-brand-aqua/50"
-                      }`}
+                      variant={selectedToken === token ? 'default' : 'outline'}
                       onClick={() => setSelectedToken(token)}
+                      disabled={processing}
                     >
-                      {isRecommended && (
-                        <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                          Recomendado
-                        </div>
-                      )}
-                      <CardContent className="p-4 text-center">
-                        <div className="text-3xl mb-2">{tokenInfo.logo}</div>
-                        <div className="font-bold text-sm">{tokenInfo.symbol}</div>
-                        <div className="text-xs text-gray-500 mt-1">{tokenInfo.name}</div>
-                        {isSelected && <CheckCircle className="h-5 w-5 text-brand-aqua mx-auto mt-2" />}
-                      </CardContent>
-                    </Card>
-                  )
-                })}
+                      {token}
+                    </Button>
+                  ))}
+                </div>
               </div>
 
-              {/* Educational info about tokens */}
-              <Card className="bg-blue-50 border-blue-200">
-                <CardContent className="p-3">
-                  <div className="flex gap-2 text-xs text-gray-700">
-                    <Info className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      {selectedToken === 'ETH' && (
-                        <p><strong>ETH</strong> es la moneda nativa de Ethereum y Scroll. Ideal si ya tienes ETH en tu wallet.</p>
-                      )}
-                      {selectedToken === 'USDC' && (
-                        <p><strong>USDC</strong> es una stablecoin (1 USDC = $1 USD). Recomendado por su estabilidad de precio.</p>
-                      )}
-                      {selectedToken === 'USDT' && (
-                        <p><strong>USDT</strong> es otra stablecoin popular (1 USDT = $1 USD). Ampliamente aceptada en exchanges.</p>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+              {/* Mostrar cantidad a pagar */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">Pagarás aproximadamente:</p>
+                <p className="text-2xl font-bold">
+                  {cryptoAmountToSend && cryptoAmountToSend > 0
+                    ? formatUnits(cryptoAmountToSend, TOKENS[selectedToken]?.decimals || 18)
+                    : '0'}{' '}
+                  {selectedToken}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  ≈ ${amountUSD} USD
+                </p>
+              </div>
 
-            {/* Botón para cambiar de red */}
-            <div className="flex justify-center">
-              <NetworkSwitchButton size="lg" className="w-full max-w-md" />
-            </div>
-
-            {/* Network checker */}
-            <NetworkChecker />
-
-            {/* Transaction status */}
-            <TransactionStatus
-              hash={hash}
-              onSuccess={() => {
-                setTxHash(hash || "")
-                setStep("success")
-              }}
-              onError={(error) => {
-                logWeb3Error(error, 'Transaction Failed')
-                const parsed = parseWeb3Error(error)
-                setError(parsed.message)
-                setStep("error")
-              }}
-            />
-
-            {/* Wallet status */}
-            {isConnected ? (
-              <div className="space-y-3">
-                <Card className="bg-green-50 border-green-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                      <div className="flex-1">
-                        <p className="font-semibold text-green-900">Wallet conectada</p>
-                        <p className="text-sm text-green-700">{address?.slice(0, 6)}...{address?.slice(-4)}</p>
-                        <p className="text-xs text-green-600 mt-1">
-                          Red: {chainName}
-                        </p>
-                      </div>
-                    {selectedToken !== 'ETH' && tokenBalance !== undefined && (
-                      <div className="text-right">
-                        <p className="text-xs text-gray-600">Balance {selectedToken}:</p>
-                        <p className="text-sm font-semibold text-green-900">
-                          {formatUnits(tokenBalance, currentDecimals)} {selectedToken}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Botón adicional para cambiar de red si no está en Scroll Mainnet */}
-              {chainId !== scroll.id && (
-                <NetworkSwitchButton size="default" className="w-full" />
+              {/* Estado de conexión */}
+              {!isConnected ? (
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">Conecta tu wallet para continuar</p>
+                </div>
+              ) : chainId !== scroll.id ? (
+                <Button
+                  onClick={() => switchChain({ chainId: scroll.id })}
+                  variant="destructive"
+                  className="w-full"
+                  disabled={processing}
+                >
+                  Cambiar a Scroll Mainnet
+                </Button>
+              ) : needsApproval ? (
+                <Button
+                  onClick={handleApproveToken}
+                  disabled={isApproving || processing}
+                  className="w-full"
+                >
+                  {isApproving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Aprobando...
+                    </>
+                  ) : (
+                    `Aprobar ${selectedToken}`
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleCryptoPayment}
+                  disabled={processing || !cryptoAmountToSend || cryptoAmountToSend === 0}
+                  className="w-full"
+                >
+                  {processing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Procesando...
+                    </>
+                  ) : (
+                    'Pagar y Mintear NFT'
+                  )}
+                </Button>
               )}
-            </div>
-            ) : (
-              <Card className="bg-yellow-50 border-yellow-200">
-                <CardContent className="p-4 flex gap-3">
-                  <Info className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-yellow-900">
-                    <p className="font-semibold mb-1">Wallet no conectada</p>
-                    <p>Por favor conecta tu wallet (MetaMask, WalletConnect, etc.) en la barra superior para continuar.</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
-            {/* Network check */}
-            {isConnected && chainId !== scroll.id && (
-              <Card className="bg-red-50 border-red-200">
-                <CardContent className="p-4 flex gap-3">
-                  <XCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-red-900">
-                    <p className="font-semibold mb-1">Red incorrecta</p>
-                    <p>Por favor cambia a <strong>Scroll Mainnet</strong> en tu wallet para continuar.</p>
-                    <p className="text-xs mt-1">Red actual: {chainName}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+              {error && (
+                <p className="text-red-600 text-sm" role="alert">
+                  {error}
+                </p>
+              )}
 
-            {/* ERC20 Approval Step */}
-            {selectedToken !== 'ETH' && isConnected && chainId === scroll.id && needsApproval && (
-              <Card className="bg-yellow-50 border-yellow-200">
-                <CardContent className="p-4">
-                  <div className="flex gap-3">
-                    <Info className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="font-semibold text-yellow-900 mb-2">Paso 1: Aprobar gasto de {selectedToken}</p>
-                      <p className="text-sm text-yellow-900 mb-3">
-                        Para pagar con {selectedToken}, primero debes aprobar que el contrato pueda gastar tus tokens.
-                        Esto es un proceso estándar de seguridad en blockchain.
-                      </p>
-                      <Button
-                        onClick={handleApproveToken}
-                        disabled={isApproving || isConfirmingApproval}
-                        className="w-full bg-yellow-600 hover:bg-yellow-700 text-white"
-                      >
-                        {isApproving || isConfirmingApproval ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            {isApproving ? "Esperando confirmación..." : "Confirmando aprobación..."}
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Aprobar {formattedPrice} {selectedToken}
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Payment Info */}
-            <Card className="bg-blue-50 border-blue-200">
-              <CardContent className="p-4 flex gap-3">
-                <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-gray-700">
-                  <p className="font-semibold mb-1">Resumen de pago:</p>
-                  <p>• Inversión: <strong>${investmentAmount.toLocaleString()} MXN</strong></p>
-                  <p>• Precio a pagar: <strong>{formattedPrice} {selectedToken}</strong></p>
-                  <p>• Red: <strong>Scroll Mainnet</strong></p>
-                  <p className="text-xs mt-2 text-gray-600">
-                    {selectedToken === 'ETH'
-                      ? "Tu NFT será minteado instantáneamente después del pago."
-                      : "Después de aprobar, podrás completar el pago y mintear tu NFT."
-                    }
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setStep("payment-method")} className="flex-1">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Atrás
-              </Button>
-              <Button
-                onClick={handleCryptoPayment}
-                disabled={
-                  !isConnected ||
-                  chainId !== scroll.id ||
-                  processing ||
-                  isPending ||
-                  isConfirming ||
-                  (selectedToken !== 'ETH' && needsApproval)
-                }
-                className="flex-1 bg-brand-yellow hover:bg-brand-yellow/90 text-brand-dark font-semibold"
+              <Button 
+                variant="outline" 
+                onClick={() => setStep('payment-method')} 
+                className="w-full"
+                disabled={processing}
               >
-                {isPending || isConfirming ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {isPending ? "Esperando confirmación..." : "Minteando NFT..."}
-                  </>
-                ) : (
-                  <>
-                    <Wallet className="mr-2 h-4 w-4" />
-                    {selectedToken === 'ETH' ? 'Pagar y Mintear NFT' : `Paso 2: Pagar y Mintear NFT`}
-                  </>
-                )}
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Cambiar método de pago
               </Button>
             </div>
           </div>
         )
 
-      case "processing":
+      case 'processing':
         return (
-          <div className="text-center py-12">
-            <Loader2 className="h-16 w-16 animate-spin text-brand-aqua mx-auto mb-6" />
-            <h3 className="text-2xl font-bold text-brand-dark mb-2">Procesando tu pago...</h3>
-            <p className="text-gray-600">Por favor espera un momento</p>
+          <div className="text-center space-y-4 py-8">
+            <Loader2 className="w-16 h-16 mx-auto animate-spin text-blue-600" />
+            <h3 className="text-xl font-bold">Procesando tu inversión...</h3>
+            <p className="text-gray-600">
+              {isPending && 'Esperando confirmación de tu wallet...'}
+              {isConfirming && 'Confirmando transacción en la blockchain...'}
+              {!isPending && !isConfirming && 'Procesando tu solicitud...'}
+            </p>
+            <p className="text-xs text-gray-500">
+              No cierres esta ventana hasta que se complete la transacción
+            </p>
           </div>
         )
 
-      case "success":
+      case 'success':
         return (
-          <div className="text-center py-8">
-            <CheckCircle className="h-20 w-20 text-green-500 mx-auto mb-6" />
-            <h3 className="text-3xl font-bold text-brand-dark mb-4">¡NFT Minteado Exitosamente!</h3>
-            <p className="text-gray-600 mb-6">
-              Tu NFT de inversión ha sido creado en la blockchain
+          <div className="text-center space-y-4 py-8">
+            <CheckCircle className="w-16 h-16 mx-auto text-green-600" />
+            <h3 className="text-xl font-bold">¡Inversión exitosa!</h3>
+            <p className="text-gray-600">
+              Tu NFT ha sido minteado exitosamente
             </p>
-
-            {/* Transaction info */}
-            {(txHash || hash) && (
-              <Card className="bg-blue-50 border-blue-200 mb-6">
-                <CardContent className="p-4">
-                  <p className="text-sm font-semibold text-gray-700 mb-2">Hash de transacción:</p>
-                  <div className="flex items-center gap-2 justify-center">
-                    <code className="text-xs bg-white px-3 py-2 rounded border border-blue-200 font-mono">
-                      {(txHash || hash)?.slice(0, 10)}...{(txHash || hash)?.slice(-8)}
-                    </code>
-                    <a
-                      href={`https://scrollscan.com/tx/${txHash || hash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-brand-aqua hover:underline"
-                    >
-                      Ver en Scrollscan ↗
-                    </a>
-                  </div>
-                </CardContent>
-              </Card>
+            {txHash && (
+              <a
+                href={`https://scrollscan.com/tx/${txHash}`}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="text-blue-600 hover:underline text-sm inline-flex items-center gap-1"
+              >
+                Ver transacción en Scrollscan
+              </a>
             )}
-
-            <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 mb-6">
-              <CardContent className="p-6">
-                <div className="grid grid-cols-2 gap-4 text-left">
-                  <div>
-                    <p className="text-sm text-gray-600">Inversión</p>
-                    <p className="text-xl font-bold text-brand-dark">${investmentAmount.toLocaleString()} MXM</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Retorno esperado</p>
-                    <p className="text-xl font-bold text-green-600">${expectedReturn.toLocaleString()} MXM</p>
-                  </div>
-                  <div className="col-span-2 pt-2 border-t border-green-200">
-                    <p className="text-sm text-gray-600">Wallet</p>
-                    <p className="text-sm font-mono text-brand-dark">{address?.slice(0, 6)}...{address?.slice(-4)}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-yellow-50 border-yellow-200 mb-6">
-              <CardContent className="p-4 flex gap-3">
-                <Info className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-gray-700 text-left">
-                  <p className="font-semibold mb-1">Próximos pasos:</p>
-                  <ul className="space-y-1 text-xs">
-                    <li>• Tu NFT está ahora en tu wallet: {address?.slice(0, 6)}...{address?.slice(-4)}</li>
-                    <li>• Puedes verlo en tu wallet de MetaMask o WalletConnect</li>
-                    <li>• Recibirás actualizaciones sobre los retornos de tu inversión</li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Button onClick={onClose} className="bg-brand-aqua hover:bg-brand-aqua/90 text-white">
-              Volver al inicio
+            <Button onClick={onClose} className="w-full">
+              Cerrar
             </Button>
           </div>
         )
 
-      case "error":
-        // Detectar si es un error de "próximamente"
-        const isComingSoon = error?.toLowerCase().includes('próximamente') || error?.toLowerCase().includes('proximamente')
-
+      case 'error':
         return (
-          <div className="text-center py-8">
-            {isComingSoon ? (
-              <>
-                <Info className="h-20 w-20 text-brand-yellow mx-auto mb-6" />
-                <h3 className="text-3xl font-bold text-brand-dark mb-4">Próximamente</h3>
-                <p className="text-gray-600 mb-6">{error}</p>
-                <Card className="bg-blue-50 border-blue-200 mb-6 mx-8">
-                  <CardContent className="p-6">
-                    <p className="text-sm text-gray-700 mb-3">
-                      <strong>Estamos trabajando en activar los pagos.</strong>
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Mientras tanto, puedes contactarnos directamente para procesar tu inversión:
-                    </p>
-                    <p className="text-sm font-semibold text-brand-aqua mt-2">
-                      contacto@urbanika.xyz
-                    </p>
-                  </CardContent>
-                </Card>
-                <div className="flex gap-3 justify-center">
-                  <Button variant="outline" onClick={onClose}>
-                    Cerrar
-                  </Button>
-                  <Button onClick={() => setStep("payment-method")} className="bg-brand-aqua text-white">
-                    Elegir otro método
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <XCircle className="h-20 w-20 text-red-500 mx-auto mb-6" />
-                <h3 className="text-3xl font-bold text-red-500 mb-4">Error en el proceso</h3>
-                <p className="text-gray-600 mb-6">{error || "Ocurrió un error inesperado"}</p>
-                <div className="flex gap-3 justify-center">
-                  <Button variant="outline" onClick={onClose}>
-                    Cerrar
-                  </Button>
-                  <Button onClick={() => setStep("payment-method")} className="bg-brand-aqua text-white">
-                    Intentar de nuevo
-                  </Button>
-                </div>
-              </>
-            )}
+          <div className="text-center space-y-4 py-8">
+            <XCircle className="w-16 h-16 mx-auto text-red-600" />
+            <h3 className="text-xl font-bold">Error en el proceso</h3>
+            <p className="text-red-600 text-sm max-w-sm mx-auto" role="alert">
+              {error}
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose} className="flex-1">
+                Cerrar
+              </Button>
+              <Button 
+                onClick={() => {
+                  setError('')
+                  setStep('crypto')
+                }} 
+                className="flex-1"
+              >
+                Intentar de nuevo
+              </Button>
+            </div>
           </div>
         )
 
@@ -1183,58 +831,41 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
     }
   }
 
+  // Función helper para obtener el número del paso actual
+  const getStepNumber = (): number => {
+    const stepMap: Record<FlowStep, number> = {
+      'amount': 1,
+      'contact': 2,
+      'payment-method': 3,
+      'crypto': 4,
+      'processing': 4,
+      'success': 5,
+      'error': 4
+    }
+    return stepMap[step] || 1
+  }
+
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-start justify-center z-50 p-4 overflow-y-auto">
-      <Card className="bg-white max-w-2xl w-full my-4 max-h-[calc(100vh-2rem)] flex flex-col">
-        <CardContent className="p-8 overflow-y-auto flex-1">
-          {/* Progress indicator */}
-          {!["processing", "success", "error"].includes(step) && (
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-2">
-                <span className={`text-sm ${step === "amount" ? "text-brand-aqua font-semibold" : "text-gray-400"}`}>
-                  Monto
-                </span>
-                <span className={`text-sm ${step === "info" ? "text-brand-aqua font-semibold" : "text-gray-400"}`}>
-                  Información
-                </span>
-                <span
-                  className={`text-sm ${["payment-method", "stripe", "crypto"].includes(step) ? "text-brand-aqua font-semibold" : "text-gray-400"}`}
-                >
-                  Pago
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-gradient-to-r from-brand-aqua to-brand-yellow h-2 rounded-full transition-all duration-300"
-                  style={{
-                    width:
-                      step === "amount"
-                        ? "33%"
-                        : step === "info"
-                          ? "66%"
-                          : ["payment-method", "stripe", "crypto"].includes(step)
-                            ? "100%"
-                            : "0%",
-                  }}
-                />
-              </div>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="max-w-md w-full mx-auto my-8">
+        <Card className="shadow-2xl">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Volver
+              </Button>
+              <div className="text-sm text-gray-500">Paso {getStepNumber()}/5</div>
             </div>
-          )}
-
-          {renderStep()}
-
-          {/* Close button */}
-          {!["processing"].includes(step) && (
-            <Button
-              variant="ghost"
-              onClick={onClose}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-            >
-              ✕
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+            {renderStep()}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

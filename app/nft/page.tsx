@@ -32,7 +32,7 @@ import { WalletConnectButton } from "@/components/wallet-connect-button"
 
 export default function NFTInvestmentPage() {
   const [showPurchaseFlow, setShowPurchaseFlow] = useState(false)
-  const [selectedAmount, setSelectedAmount] = useState(250)
+  const [selectedAmountUSD, setSelectedAmountUSD] = useState(13) // El componente trabaja en USD
 
   const nftBenefits = [
     {
@@ -100,11 +100,11 @@ export default function NFTInvestmentPage() {
     },
   ]
 
-  // Valores correctos de inversión en MXN
+  // Valores de inversión en USD (el componente trabaja en USD internamente)
   const quickAmounts = [
-    { amount: 250, label: "250", usd: 13, popular: true, tier: "Bronze" },
-    { amount: 500, label: "500", usd: 26, popular: false, tier: "Silver" },
-    { amount: 1000, label: "1,000", usd: 52, popular: false, tier: "Silver" },
+    { amountUSD: 13, amountMXN: 250, label: "250", popular: true, tier: "Bronze" },
+    { amountUSD: 26, amountMXN: 500, label: "500", popular: false, tier: "Silver" },
+    { amountUSD: 52, amountMXN: 1000, label: "1,000", popular: false, tier: "Silver" },
   ]
 
   return (
@@ -208,8 +208,8 @@ export default function NFTInvestmentPage() {
 
                   {/* Quick Amount Buttons */}
                   <div className="grid grid-cols-3 gap-4 mb-8">
-                    {quickAmounts.map(({ amount, label, usd, popular, tier }) => (
-                      <div key={amount} className="relative">
+                    {quickAmounts.map(({ amountUSD, amountMXN, label, popular, tier }) => (
+                      <div key={amountUSD} className="relative">
                         {popular && (
                           <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
                             <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs px-3 py-1 shadow-md">
@@ -219,7 +219,7 @@ export default function NFTInvestmentPage() {
                         )}
                         <Button
                           onClick={() => {
-                            setSelectedAmount(amount)
+                            setSelectedAmountUSD(amountUSD)
                             setShowPurchaseFlow(true)
                           }}
                           variant="outline"
@@ -230,13 +230,13 @@ export default function NFTInvestmentPage() {
                           }`}
                         >
                           <div className="text-3xl font-bold text-brand-dark">${label}</div>
-                          <div className="text-xs text-gray-500">MXN ≈ ${usd} USD</div>
+                          <div className="text-xs text-gray-500">MXN ≈ ${amountUSD} USD</div>
                           <Badge variant="outline" className="text-xs border-brand-aqua/50 text-brand-aqua">
                             {tier}
                           </Badge>
                           <div className="text-xs text-gray-400 mt-1">
                             <ArrowRight className="inline w-3 h-3 mr-1" />
-                            Retorno: ${(amount * 1.5).toLocaleString()} MXN
+                            Retorno: ${(amountMXN * 1.5).toLocaleString()} MXN
                           </div>
                         </Button>
                       </div>
@@ -507,7 +507,10 @@ export default function NFTInvestmentPage() {
 
       {/* Purchase Flow Modal */}
       {showPurchaseFlow && (
-        <NFTPurchaseFlow onClose={() => setShowPurchaseFlow(false)} initialAmount={selectedAmount} />
+        <NFTPurchaseFlow
+          onClose={() => setShowPurchaseFlow(false)}
+          initialAmount={selectedAmountUSD}
+        />
       )}
     </div>
   )
