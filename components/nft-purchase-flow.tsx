@@ -87,7 +87,19 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
     transactionStatus,
     error: mintError
   } = useMintNFT(chainId)
-  const { data: priceData } = useCalculatePrice(investmentAmount, chainId)
+  const { data: priceData, isError: isPriceError, error: priceError } = useCalculatePrice(investmentAmount, chainId)
+
+  // Debug: Log price data
+  useEffect(() => {
+    console.log('💰 Price Debug:', {
+      investmentAmount,
+      chainId,
+      priceData: priceData?.toString(),
+      isPriceError,
+      priceError: priceError?.message,
+      contractAddress,
+    })
+  }, [priceData, isPriceError, priceError, investmentAmount, chainId, contractAddress])
 
   // Oracle price hooks
   const { priceInUSD, getETHAmount, formattedPrice } = useETHPrice(chainId)
@@ -103,11 +115,26 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
   const currentTokenMetadata = getTokenMetadata(selectedToken, chainId)
   const selectedTokenAddress = currentTokenMetadata.address || ''
 
-  const { data: tokenPriceData } = useCalculatePriceInToken(
+  const { data: tokenPriceData, isError: isTokenPriceError, error: tokenPriceError } = useCalculatePriceInToken(
     investmentAmount,
     selectedTokenAddress,
     chainId
   )
+
+  // Debug: Log token price data
+  useEffect(() => {
+    if (selectedToken !== 'ETH') {
+      console.log('💵 Token Price Debug:', {
+        selectedToken,
+        selectedTokenAddress,
+        investmentAmount,
+        chainId,
+        tokenPriceData: tokenPriceData?.toString(),
+        isTokenPriceError,
+        tokenPriceError: tokenPriceError?.message,
+      })
+    }
+  }, [tokenPriceData, isTokenPriceError, tokenPriceError, selectedToken, selectedTokenAddress, investmentAmount, chainId])
 
   // ERC20 token hook (for USDC/USDT)
   const {
@@ -343,12 +370,21 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
 
     // Verificar precio según el token seleccionado
     const currentPrice = selectedToken === 'ETH' ? priceData : tokenPriceData
-    // //   tokenPriceData: tokenPriceData?.toString(),
-    //   currentPrice: currentPrice?.toString()
-    // })
+
+    console.log('🔍 Payment Debug:', {
+      selectedToken,
+      priceData: priceData?.toString(),
+      tokenPriceData: tokenPriceData?.toString(),
+      currentPrice: currentPrice?.toString(),
+      isPriceError,
+      isTokenPriceError,
+    })
 
     if (!currentPrice) {
-      setError("Error calculando el precio. Por favor intenta de nuevo.")
+      const errorMsg = selectedToken === 'ETH'
+        ? `Error calculando precio en ETH. ${priceError?.message || 'Precio no disponible'}`
+        : `Error calculando precio en ${selectedToken}. ${tokenPriceError?.message || 'Precio no disponible'}`
+      setError(errorMsg)
       setStep("error")
       return
     }
