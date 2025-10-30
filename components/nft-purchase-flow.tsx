@@ -22,7 +22,8 @@ import { captureEmail, saveLeadToLocalStorage, isValidEmail } from "@/lib/email-
 import { createStripeCheckout } from "@/lib/payment/stripe"
 import { SUPPORTED_CRYPTOS, type SupportedCrypto } from "@/lib/payment/crypto"
 import { useMintNFT, useCalculatePrice, useCalculatePriceInToken } from "@/hooks/web3/useMintNFT"
-import { useAccount, useConnect } from "wagmi"
+import { useAccount, useConnect, useChainId } from "wagmi"
+import { scroll, scrollSepolia } from "wagmi/chains"
 import { formatEther, formatUnits } from "viem"
 import { TOKENS, type SupportedToken, getTokenMetadata } from "@/lib/web3/tokens"
 import { useERC20Token } from "@/hooks/web3/useERC20"
@@ -69,6 +70,11 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
 
   // Web3 hooks - usan investmentAmount y selectedToken declarados arriba
   const { address, isConnected, chain } = useAccount()
+  const chainId = useChainId()
+
+  // Get chain info from chainId (más confiable que chain.name)
+  const currentChain = chainId === scroll.id ? scroll : chainId === scrollSepolia.id ? scrollSepolia : null
+  const chainName = currentChain?.name || `Chain ID ${chainId || 'desconocido'}`
   const {
     mintNFT,
     mintNFTWithToken,
@@ -329,8 +335,8 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
     }
 
     // Verificar que esté en la red correcta (Scroll Mainnet)
-    if (chain?.id !== 534352) {
-      setError("Por favor cambia a la red Scroll Mainnet en tu wallet")
+    if (chainId !== scroll.id) {
+      setError(`Por favor cambia a Scroll Mainnet en tu wallet. Red actual: ${chainName}`)
       setStep("error")
       return
     }
@@ -886,7 +892,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
                         <p className="font-semibold text-green-900">Wallet conectada</p>
                         <p className="text-sm text-green-700">{address?.slice(0, 6)}...{address?.slice(-4)}</p>
                         <p className="text-xs text-green-600 mt-1">
-                          Red: {chain?.name || `Chain ID ${chain?.id || 'desconocido'}`}
+                          Red: {chainName}
                         </p>
                       </div>
                     {selectedToken !== 'ETH' && tokenBalance !== undefined && (
@@ -902,7 +908,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
               </Card>
 
               {/* Botón adicional para cambiar de red si no está en Scroll Mainnet */}
-              {chain?.id !== 534352 && (
+              {chainId !== scroll.id && (
                 <NetworkSwitchButton size="default" className="w-full" />
               )}
             </div>
@@ -919,21 +925,21 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
             )}
 
             {/* Network check */}
-            {isConnected && chain?.id !== 534352 && (
+            {isConnected && chainId !== scroll.id && (
               <Card className="bg-red-50 border-red-200">
                 <CardContent className="p-4 flex gap-3">
                   <XCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-red-900">
                     <p className="font-semibold mb-1">Red incorrecta</p>
                     <p>Por favor cambia a <strong>Scroll Mainnet</strong> en tu wallet para continuar.</p>
-                    <p className="text-xs mt-1">Red actual: {chain?.name}</p>
+                    <p className="text-xs mt-1">Red actual: {chainName}</p>
                   </div>
                 </CardContent>
               </Card>
             )}
 
             {/* ERC20 Approval Step */}
-            {selectedToken !== 'ETH' && isConnected && chain?.id === 534352 && needsApproval && (
+            {selectedToken !== 'ETH' && isConnected && chainId === scroll.id && needsApproval && (
               <Card className="bg-yellow-50 border-yellow-200">
                 <CardContent className="p-4">
                   <div className="flex gap-3">
@@ -997,7 +1003,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
                 onClick={handleCryptoPayment}
                 disabled={
                   !isConnected ||
-                  chain?.id !== 534352 ||
+                  chainId !== scroll.id ||
                   processing ||
                   isPending ||
                   isConfirming ||
