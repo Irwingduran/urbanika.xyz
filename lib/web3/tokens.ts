@@ -1,18 +1,74 @@
 /**
- * Tokens soportados en Scroll Mainnet para pagos
+ * Tokens soportados para pagos en Scroll (Mainnet y Sepolia)
  */
 
 export const SCROLL_CHAIN_ID = 534352
+export const SCROLL_SEPOLIA_CHAIN_ID = 534351
 
 // Direcciones de tokens en Scroll Mainnet
-export const TOKEN_ADDRESSES = {
+export const TOKEN_ADDRESSES_MAINNET = {
   USDC: '0x06eFdBFf2a14a7c8E15944D1F4A48F9F95F663A4',
   USDT: '0xf55BEC9cafDbE8730f096Aa55dad6D22d44099Df',
 } as const
 
+// Direcciones de tokens en Scroll Sepolia (Testnet)
+// Nota: Estas son direcciones de tokens de testnet. Puedes obtener tokens de prueba en:
+// - USDC Sepolia: https://faucet.circle.com/
+// - USDT Sepolia: Puedes deployar tu propio mock o usar faucets
+export const TOKEN_ADDRESSES_SEPOLIA = {
+  USDC: '0x2C9678042D52B97D27f2bD2947F7111d93F3dD0D', // Mock USDC en Scroll Sepolia
+  USDT: '0xf55BEC9cafDbE8730f096Aa55dad6D22d44099Df', // Mock USDT en Scroll Sepolia
+} as const
+
+// Direcciones por defecto (Mainnet)
+export const TOKEN_ADDRESSES = TOKEN_ADDRESSES_MAINNET
+
 export type SupportedToken = 'ETH' | 'USDC' | 'USDT'
 
-// Metadata de los tokens
+// Helper para obtener direcciones de tokens según chainId
+export function getTokenAddresses(chainId?: number) {
+  if (chainId === SCROLL_SEPOLIA_CHAIN_ID) {
+    return TOKEN_ADDRESSES_SEPOLIA
+  }
+  return TOKEN_ADDRESSES_MAINNET
+}
+
+// Helper para obtener dirección de un token específico
+export function getTokenAddress(token: 'USDC' | 'USDT', chainId?: number): string {
+  const addresses = getTokenAddresses(chainId)
+  return addresses[token]
+}
+
+// Metadata base de los tokens (sin address específica)
+interface TokenMetadata {
+  symbol: string
+  name: string
+  decimals: number
+  logo: string
+}
+
+const TOKEN_METADATA: Record<SupportedToken, TokenMetadata> = {
+  ETH: {
+    symbol: 'ETH',
+    name: 'Ethereum',
+    decimals: 18,
+    logo: '⟠',
+  },
+  USDC: {
+    symbol: 'USDC',
+    name: 'USD Coin',
+    decimals: 6,
+    logo: '$',
+  },
+  USDT: {
+    symbol: 'USDT',
+    name: 'Tether USD',
+    decimals: 6,
+    logo: '₮',
+  },
+}
+
+// Metadata de los tokens (por defecto usa Mainnet)
 export const TOKENS: Record<SupportedToken, {
   symbol: string
   name: string
@@ -21,26 +77,27 @@ export const TOKENS: Record<SupportedToken, {
   logo: string
 }> = {
   ETH: {
-    symbol: 'ETH',
-    name: 'Ethereum',
+    ...TOKEN_METADATA.ETH,
     address: null, // Native token
-    decimals: 18,
-    logo: '⟠',
   },
   USDC: {
-    symbol: 'USDC',
-    name: 'USD Coin',
-    address: TOKEN_ADDRESSES.USDC,
-    decimals: 6,
-    logo: '$',
+    ...TOKEN_METADATA.USDC,
+    address: TOKEN_ADDRESSES_MAINNET.USDC,
   },
   USDT: {
-    symbol: 'USDT',
-    name: 'Tether USD',
-    address: TOKEN_ADDRESSES.USDT,
-    decimals: 6,
-    logo: '₮',
+    ...TOKEN_METADATA.USDT,
+    address: TOKEN_ADDRESSES_MAINNET.USDT,
   },
+}
+
+// Helper para obtener metadata de un token con la dirección correcta según chainId
+export function getTokenMetadata(token: SupportedToken, chainId?: number) {
+  const metadata = TOKEN_METADATA[token]
+  if (token === 'ETH') {
+    return { ...metadata, address: null }
+  }
+  const address = getTokenAddress(token as 'USDC' | 'USDT', chainId)
+  return { ...metadata, address }
 }
 
 // ABI mínimo para interactuar con tokens ERC20

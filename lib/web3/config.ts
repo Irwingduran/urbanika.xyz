@@ -1,13 +1,14 @@
 import { http, createConfig, fallback, createStorage } from 'wagmi'
-import { scroll } from 'wagmi/chains'
+import { scroll, scrollSepolia } from 'wagmi/chains'
 import { injected, walletConnect } from 'wagmi/connectors'
 import '@/lib/web3/metamask-fix' // Fix para errores de MetaMask
 
 /**
- * Configuración de Wagmi para Urbanika - Production
+ * Configuración de Wagmi para Urbanika
  *
- * Chain configurada:
+ * Chains configuradas:
  * - Scroll Mainnet (Chain ID: 534352)
+ * - Scroll Sepolia (Chain ID: 534351) - Testnet
  *
  * Features:
  * - Multiple RPC endpoints con fallback automático
@@ -29,7 +30,7 @@ const metadata = {
 }
 
 export const config = createConfig({
-  chains: [scroll],
+  chains: [scroll, scrollSepolia],
   connectors: [
     injected(), // MetaMask, Coinbase Wallet, etc.
     ...(projectId
@@ -49,6 +50,11 @@ export const config = createConfig({
       http('https://scroll.blockpi.network/v1/rpc/public'),
       http('https://scroll-mainnet.public.blastapi.io'),
     ]),
+    // Scroll Sepolia Testnet
+    [scrollSepolia.id]: fallback([
+      http('https://sepolia-rpc.scroll.io/'),
+      http('https://scroll-sepolia.blockpi.network/v1/rpc/public'),
+    ]),
   },
   // Habilitar SSR para Next.js
   ssr: true,
@@ -61,10 +67,17 @@ export const config = createConfig({
 // Chain por defecto: Scroll Mainnet
 export const defaultChain = scroll
 
-// Contract address en Scroll Mainnet (v2.0.3 with Chainlink Oracle - CORRECTED)
-export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET || '0x1F3B7B68627f8B9BFe3db1F4a419ee20226b4a1d'
+// Contract addresses
+const CONTRACT_ADDRESS_MAINNET = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET || '0x1F3B7B68627f8B9BFe3db1F4a419ee20226b4a1d'
+const CONTRACT_ADDRESS_SEPOLIA = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS_SEPOLIA || '0x591D218a9Ac4843FB6f571273166B5d5df99E6c0'
 
-// Helper para obtener contract address (siempre retorna mainnet)
+// Contract address por defecto (mainnet)
+export const CONTRACT_ADDRESS = CONTRACT_ADDRESS_MAINNET
+
+// Helper para obtener contract address según chainId
 export function getContractAddress(chainId?: number): string {
-  return CONTRACT_ADDRESS
+  if (chainId === scrollSepolia.id) {
+    return CONTRACT_ADDRESS_SEPOLIA
+  }
+  return CONTRACT_ADDRESS_MAINNET
 }

@@ -24,7 +24,7 @@ import { SUPPORTED_CRYPTOS, type SupportedCrypto } from "@/lib/payment/crypto"
 import { useMintNFT, useCalculatePrice, useCalculatePriceInToken } from "@/hooks/web3/useMintNFT"
 import { useAccount, useConnect } from "wagmi"
 import { formatEther, formatUnits } from "viem"
-import { TOKENS, type SupportedToken } from "@/lib/web3/tokens"
+import { TOKENS, type SupportedToken, getTokenMetadata } from "@/lib/web3/tokens"
 import { useERC20Token } from "@/hooks/web3/useERC20"
 import { useETHPrice, useInvestmentTiers } from "@/hooks/web3/useETHPrice"
 import { useUSDtoMXN } from "@/hooks/useUSDtoMXN"
@@ -92,8 +92,10 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
   // Get contract address for ERC20 approvals
   const contractAddress = getContractAddress(chain?.id || 534352)
 
-  // Token-specific price calculation
-  const selectedTokenAddress = TOKENS[selectedToken].address || ''
+  // Token-specific metadata and address based on current chain
+  const currentTokenMetadata = getTokenMetadata(selectedToken, chain?.id)
+  const selectedTokenAddress = currentTokenMetadata.address || ''
+
   const { data: tokenPriceData } = useCalculatePriceInToken(
     investmentAmount,
     selectedTokenAddress,
