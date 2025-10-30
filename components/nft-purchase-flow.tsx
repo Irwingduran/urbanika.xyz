@@ -86,27 +86,27 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
     transactionError,
     transactionStatus,
     error: mintError
-  } = useMintNFT(chain?.id)
-  const { data: priceData } = useCalculatePrice(investmentAmount, chain?.id)
+  } = useMintNFT(chainId)
+  const { data: priceData } = useCalculatePrice(investmentAmount, chainId)
 
   // Oracle price hooks
-  const { priceInUSD, getETHAmount, formattedPrice } = useETHPrice(chain?.id)
+  const { priceInUSD, getETHAmount, formattedPrice } = useETHPrice(chainId)
   const { getTierForAmount } = useInvestmentTiers()
 
   // USD to MXN exchange rate hook
   const { usdToMxn, isLoading: isLoadingExchangeRate, lastUpdate } = useUSDtoMXN()
 
   // Get contract address for ERC20 approvals
-  const contractAddress = getContractAddress(chain?.id || 534352)
+  const contractAddress = getContractAddress(chainId)
 
   // Token-specific metadata and address based on current chain
-  const currentTokenMetadata = getTokenMetadata(selectedToken, chain?.id)
+  const currentTokenMetadata = getTokenMetadata(selectedToken, chainId)
   const selectedTokenAddress = currentTokenMetadata.address || ''
 
   const { data: tokenPriceData } = useCalculatePriceInToken(
     investmentAmount,
     selectedTokenAddress,
-    chain?.id
+    chainId
   )
 
   // ERC20 token hook (for USDC/USDT)
@@ -158,7 +158,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
   // Handle successful mint
   useEffect(() => {
     if (isSuccess && hash) {
-      trackNFTMintSuccess(investmentAmount, hash, chain?.id || 534352)
+      trackNFTMintSuccess(investmentAmount, hash, chainId)
       setTxHash(hash)
       setStep("success")
       setProcessing(false)
@@ -176,7 +176,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
         }).catch(() => {})
       }
     }
-  }, [isSuccess, hash, isPending, isConfirming, isTransactionError, transactionStatus, investmentAmount, chain?.id, leadId, step])
+  }, [isSuccess, hash, isPending, isConfirming, isTransactionError, transactionStatus, investmentAmount, chainId, leadId, step])
 
   // Handle mint errors with better parsing
   useEffect(() => {
