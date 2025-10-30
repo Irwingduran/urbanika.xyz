@@ -92,6 +92,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 250 }: NFTPur
     isConfirming,
     isSuccess,
     isTransactionError,
+    transactionError,
     error: mintError
   } = useMintNFT(chainId)
 
@@ -390,7 +391,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 250 }: NFTPur
     }
   }, [isSuccess, hash, leadId])
 
-  // Manejar errores de mint
+  // Manejar errores de mint (writeContract)
   useEffect(() => {
     if (mintError && step === 'processing') {
       console.error('Mint error:', mintError)
@@ -399,6 +400,30 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 250 }: NFTPur
       setProcessing(false)
     }
   }, [mintError, step])
+
+  // Manejar errores de confirmación de transacción
+  useEffect(() => {
+    if (isTransactionError && step === 'processing') {
+      console.error('Transaction error:', transactionError)
+      const errorMsg = transactionError?.message || 'Error al confirmar la transacción'
+      setError(errorMsg)
+      setStep('error')
+      setProcessing(false)
+    }
+  }, [isTransactionError, transactionError, step])
+
+  // Timeout para transacciones que tardan demasiado (5 minutos)
+  useEffect(() => {
+    if (step === 'processing') {
+      const timeout = setTimeout(() => {
+        setError('La transacción está tardando más de lo esperado. Por favor, verifica en tu wallet si la transacción fue completada o rechazada.')
+        setStep('error')
+        setProcessing(false)
+      }, 5 * 60 * 1000) // 5 minutos
+
+      return () => clearTimeout(timeout)
+    }
+  }, [step])
 
   // Prevenir navegación accidental durante procesamiento
   useEffect(() => {
@@ -657,6 +682,9 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 250 }: NFTPur
         )
 
       case 'crypto':
+        const networkName = chainId === scroll.id ? 'Scroll Mainnet' : chainId === 1 ? 'Ethereum Mainnet' : chainId === 137 ? 'Polygon' : chainId === 56 ? 'BSC' : `Red ${chainId}`
+        const isCorrectNetwork = chainId === scroll.id
+
         return (
           <div className="space-y-6">
             <div className="text-center">
@@ -665,6 +693,44 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 250 }: NFTPur
             </div>
 
             <div className="space-y-4">
+              {/* Network indicator */}
+              {isConnected && (
+                <div className={`p-4 rounded-lg border-2 ${
+                  isCorrectNetwork
+                    ? 'bg-green-50 border-green-200'
+                    : 'bg-orange-50 border-orange-200'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${
+                        isCorrectNetwork ? 'bg-green-500' : 'bg-orange-500'
+                      } animate-pulse`} />
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {isCorrectNetwork ? '✓ Red correcta' : '⚠️ Red incorrecta'}
+                        </p>
+                        <p className="text-xs text-gray-600">{networkName}</p>
+                      </div>
+                    </div>
+                    {!isCorrectNetwork && (
+                      <Button
+                        onClick={() => switchChain({ chainId: scroll.id })}
+                        size="sm"
+                        variant="default"
+                        className="bg-orange-600 hover:bg-orange-700"
+                      >
+                        Cambiar a Scroll
+                      </Button>
+                    )}
+                  </div>
+                  {!isCorrectNetwork && (
+                    <p className="text-xs text-orange-700 mt-2">
+                      Esta aplicación solo funciona en Scroll Mainnet. Por favor cambia tu red.
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Token selector */}
               <div>
                 <Label>Selecciona tu moneda</Label>
@@ -674,7 +740,7 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 250 }: NFTPur
                       key={token}
                       variant={selectedToken === token ? 'default' : 'outline'}
                       onClick={() => setSelectedToken(token)}
-                      disabled={processing}
+                      disabled={processing || !isCorrectNetwork}
                     >
                       {token}
                     </Button>
@@ -696,20 +762,15 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 250 }: NFTPur
                 </p>
               </div>
 
-              {/* Estado de conexión */}
+              {/* Botones de acción */}
               {!isConnected ? (
                 <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm text-yellow-800">Conecta tu wallet para continuar</p>
                 </div>
-              ) : chainId !== scroll.id ? (
-                <Button
-                  onClick={() => switchChain({ chainId: scroll.id })}
-                  variant="destructive"
-                  className="w-full"
-                  disabled={processing}
-                >
-                  Cambiar a Scroll Mainnet
-                </Button>
+              ) : !isCorrectNetwork ? (
+                <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                  <p className="text-sm text-orange-800">Por favor cambia a Scroll Mainnet usando el botón de arriba</p>
+                </div>
               ) : needsApproval ? (
                 <Button
                   onClick={handleApproveToken}
