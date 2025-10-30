@@ -21,7 +21,7 @@ import {
 import { captureEmail, saveLeadToLocalStorage, isValidEmail } from "@/lib/email-capture"
 import { createStripeCheckout } from "@/lib/payment/stripe"
 import { SUPPORTED_CRYPTOS, type SupportedCrypto } from "@/lib/payment/crypto"
-import { useMintNFT, useCalculatePrice, useCalculatePriceInToken } from "@/hooks/web3/useMintNFT"
+import { useMintNFT } from "@/hooks/web3/useMintNFT"
 import { useAccount, useConnect, useChainId } from "wagmi"
 import { scroll, scrollSepolia } from "wagmi/chains"
 import { formatEther, formatUnits } from "viem"
@@ -87,14 +87,13 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
     transactionStatus,
     error: mintError
   } = useMintNFT(chainId)
-  const { data: priceData, isError: isPriceError, error: priceError } = useCalculatePrice(investmentAmount, chainId)
+
+  // USD to MXN exchange rate hook (for display only)
+  const { usdToMxn, isLoading: isLoadingExchangeRate, lastUpdate } = useUSDtoMXN()
 
   // Oracle price hooks
   const { priceInUSD, getETHAmount, formattedPrice } = useETHPrice(chainId)
   const { getTierForAmount } = useInvestmentTiers()
-
-  // USD to MXN exchange rate hook
-  const { usdToMxn, isLoading: isLoadingExchangeRate, lastUpdate } = useUSDtoMXN()
 
   // Get contract address for ERC20 approvals
   const contractAddress = getContractAddress(chainId)
@@ -103,11 +102,18 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
   const currentTokenMetadata = getTokenMetadata(selectedToken, chainId)
   const selectedTokenAddress = currentTokenMetadata.address || ''
 
-  const { data: tokenPriceData, isError: isTokenPriceError, error: tokenPriceError } = useCalculatePriceInToken(
-    investmentAmount,
-    selectedTokenAddress,
-    chainId
-  )
+  // Calculate crypto amounts to send based on USD investment
+  const cryptoAmountToSend = (() => {
+    if (selectedToken === 'ETH') {
+      // For ETH: convert USD to ETH using oracle
+      return getETHAmount(investmentAmount)
+    } else {
+      // For stablecoins (USDC/USDT): 1 USD ≈ 1 token
+      // USDC/USDT have 6 decimals
+      const tokenDecimals = TOKENS[selectedToken].decimals
+      return BigInt(Math.floor(investmentAmount * (10 ** tokenDecimals)))
+    }
+  })()
 
   // ERC20 token hook (for USDC/USDT)
   const {
@@ -178,29 +184,24 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
     }
   }, [isSuccess, hash, isPending, isConfirming, isTransactionError, transactionStatus, investmentAmount, chainId, leadId, step])
 
-  // Debug: Price calculation logs
+  // Debug: Crypto amount calculation
   useEffect(() => {
     const debugData = {
       investmentAmount,
       chainId,
-      priceData: priceData?.toString(),
-      isPriceError,
-      priceError: priceError?.message,
-      contractAddress,
       selectedToken,
-      tokenPriceData: tokenPriceData?.toString(),
-      isTokenPriceError,
-      tokenPriceError: tokenPriceError?.message,
-      selectedTokenAddress,
+      cryptoAmountToSend: cryptoAmountToSend?.toString(),
+      priceInUSD,
+      contractAddress,
     }
-    console.log('💰 Price Debug:', debugData)
+    console.log('💰 Crypto Amount Debug:', debugData)
 
     // Store in window for manual inspection
     if (typeof window !== 'undefined') {
       // @ts-ignore
       window.URBANIKA_DEBUG = debugData
     }
-  }, [priceData, isPriceError, priceError, tokenPriceData, isTokenPriceError, tokenPriceError, investmentAmount, chainId, contractAddress, selectedToken, selectedTokenAddress])
+  }, [investmentAmount, chainId, selectedToken, cryptoAmountToSend, priceInUSD, contractAddress])
 
   // Handle mint errors with better parsing
   useEffect(() => {
@@ -365,26 +366,19 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
       return
     }
 
-    // Verificar precio según el token seleccionado
-    const currentPrice = selectedToken === 'ETH' ? priceData : tokenPriceData
-
-    console.log('🔍 Payment Debug:', {
-      selectedToken,
-      priceData: priceData?.toString(),
-      tokenPriceData: tokenPriceData?.toString(),
-      currentPrice: currentPrice?.toString(),
-      isPriceError,
-      isTokenPriceError,
-    })
-
-    if (!currentPrice) {
-      const errorMsg = selectedToken === 'ETH'
-        ? `Error calculando precio en ETH. ${priceError?.message || 'Precio no disponible'}`
-        : `Error calculando precio en ${selectedToken}. ${tokenPriceError?.message || 'Precio no disponible'}`
-      setError(errorMsg)
+    // Verificar que tengamos cantidad válida para enviar
+    if (!cryptoAmountToSend || cryptoAmountToSend === 0n) {
+      setError("Error calculando cantidad de crypto a enviar. Intenta con otro monto.")
       setStep("error")
       return
     }
+
+    console.log('🔍 Payment Debug:', {
+      selectedToken,
+      investmentAmount,
+      cryptoAmountToSend: cryptoAmountToSend.toString(),
+      priceInUSD,
+    })
 
     // Para tokens ERC20, verificar que haya suficiente allowance
     if (selectedToken !== 'ETH' && needsApproval) {
@@ -424,33 +418,31 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
       if (selectedToken === 'ETH') {
         // Pago en ETH (nativo)
         await mintNFT({
-          investmentAmount,
           tokenURI: ipfsData.tokenURI,
-          priceInWei: priceData!, // Usar precio en ETH
+          ethAmount: cryptoAmountToSend,
         })
       } else {
         // CRITICAL: Verificar balance y allowance ANTES de mintear
         const tokenDecimals = TOKENS[selectedToken].decimals
-        const priceRequired = tokenPriceData!
         const balanceFormatted = tokenBalance ? formatUnits(tokenBalance, tokenDecimals) : '0'
         const allowanceFormatted = tokenAllowance ? formatUnits(tokenAllowance, tokenDecimals) : '0'
-        const priceFormatted = formatUnits(priceRequired, tokenDecimals)
+        const amountFormatted = formatUnits(cryptoAmountToSend, tokenDecimals)
 
         const balanceNum = parseFloat(balanceFormatted)
         const allowanceNum = parseFloat(allowanceFormatted)
-        const priceNum = parseFloat(priceFormatted)
+        const amountNum = parseFloat(amountFormatted)
 
-        if (balanceNum < priceNum) {
-          throw new Error(`Balance insuficiente. Necesitas ${priceFormatted} ${selectedToken} pero solo tienes ${balanceFormatted}`)
+        if (balanceNum < amountNum) {
+          throw new Error(`Balance insuficiente. Necesitas ${amountFormatted} ${selectedToken} pero solo tienes ${balanceFormatted}`)
         }
 
-        if (allowanceNum < priceNum) {
-          throw new Error(`Allowance insuficiente. Por favor aprueba ${priceFormatted} ${selectedToken} o más.`)
+        if (allowanceNum < amountNum) {
+          throw new Error(`Allowance insuficiente. Por favor aprueba ${amountFormatted} ${selectedToken} o más.`)
         }
 
         // Pago en ERC20 (USDC/USDT)
         await mintNFTWithToken({
-          investmentAmount,
+          tokenAmount: cryptoAmountToSend,
           tokenURI: ipfsData.tokenURI,
           tokenAddress: selectedTokenAddress,
         })

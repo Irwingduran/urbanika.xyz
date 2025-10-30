@@ -114,54 +114,40 @@ export const URBANIKA_NFT_ABI = [
   // Public mint con pago en ETH
   {
     inputs: [
-      { name: 'investmentAmount', type: 'uint256' },
-      { name: 'tokenURI', type: 'string' },
+      { name: '_tokenURI', type: 'string' },
     ],
-    name: 'publicMint',
+    name: 'publicMintWithETH',
     outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'payable',
     type: 'function',
   },
-  {
-    inputs: [{ name: 'investmentAmount', type: 'uint256' }],
-    name: 'calculatePrice',
-    outputs: [{ name: 'price', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  // Multi-token support functions
+  // Public mint con pago en tokens ERC20
   {
     inputs: [
-      { name: 'investmentAmount', type: 'uint256' },
-      { name: 'tokenAddress', type: 'address' }
-    ],
-    name: 'calculatePriceInToken',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: 'investmentAmount', type: 'uint256' },
-      { name: 'tokenURI', type: 'string' },
-      { name: 'paymentToken', type: 'address' }
+      { name: 'amount', type: 'uint256' },
+      { name: '_tokenURI', type: 'string' },
+      { name: 'paymentTokenAddress', type: 'address' }
     ],
     name: 'publicMintWithToken',
     outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'nonpayable',
     type: 'function',
   },
+  // Token acceptance management
   {
-    inputs: [{ name: 'tokenAddress', type: 'address' }],
-    name: 'tokenPricePerUnit',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
+    inputs: [
+      { name: 'tokenAddress', type: 'address' },
+      { name: 'isAccepted', type: 'bool' }
+    ],
+    name: 'setTokenAcceptance',
+    outputs: [],
+    stateMutability: 'nonpayable',
     type: 'function',
   },
   {
-    inputs: [],
-    name: 'pricePerUnit',
-    outputs: [{ name: '', type: 'uint256' }],
+    inputs: [{ name: 'tokenAddress', type: 'address' }],
+    name: 'acceptedTokens',
+    outputs: [{ name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
   },
