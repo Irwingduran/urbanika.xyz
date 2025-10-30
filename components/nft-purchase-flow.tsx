@@ -30,6 +30,7 @@ import { useETHPrice, useInvestmentTiers } from "@/hooks/web3/useETHPrice"
 import { useUSDtoMXN } from "@/hooks/useUSDtoMXN"
 import { getContractAddress } from "@/lib/web3/config"
 import { NetworkChecker } from "@/components/network-checker"
+import { NetworkSwitchButton } from "@/components/network-switch-button"
 import { TransactionStatus } from "@/components/transaction-status"
 import { parseWeb3Error, logWeb3Error } from "@/lib/web3/errors"
 import { parseTransactionError, getTroubleshootingSteps } from "@/lib/web3/transaction-errors"
@@ -851,6 +852,11 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
               </Card>
             </div>
 
+            {/* Botón para cambiar de red */}
+            <div className="flex justify-center">
+              <NetworkSwitchButton size="lg" className="w-full max-w-md" />
+            </div>
+
             {/* Network checker */}
             <NetworkChecker />
 
@@ -871,17 +877,18 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
 
             {/* Wallet status */}
             {isConnected ? (
-              <Card className="bg-green-50 border-green-200">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <div className="flex-1">
-                      <p className="font-semibold text-green-900">Wallet conectada</p>
-                      <p className="text-sm text-green-700">{address?.slice(0, 6)}...{address?.slice(-4)}</p>
-                      <p className="text-xs text-green-600 mt-1">
-                        Red: {chain?.name || `Chain ID ${chain?.id || 'desconocido'}`}
-                      </p>
-                    </div>
+              <div className="space-y-3">
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      <div className="flex-1">
+                        <p className="font-semibold text-green-900">Wallet conectada</p>
+                        <p className="text-sm text-green-700">{address?.slice(0, 6)}...{address?.slice(-4)}</p>
+                        <p className="text-xs text-green-600 mt-1">
+                          Red: {chain?.name || `Chain ID ${chain?.id || 'desconocido'}`}
+                        </p>
+                      </div>
                     {selectedToken !== 'ETH' && tokenBalance !== undefined && (
                       <div className="text-right">
                         <p className="text-xs text-gray-600">Balance {selectedToken}:</p>
@@ -893,6 +900,12 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Botón adicional para cambiar de red si no está en Scroll Mainnet */}
+              {chain?.id !== 534352 && (
+                <NetworkSwitchButton size="default" className="w-full" />
+              )}
+            </div>
             ) : (
               <Card className="bg-yellow-50 border-yellow-200">
                 <CardContent className="p-4 flex gap-3">
