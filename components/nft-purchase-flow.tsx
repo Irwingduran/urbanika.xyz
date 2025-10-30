@@ -89,21 +89,6 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
   } = useMintNFT(chainId)
   const { data: priceData, isError: isPriceError, error: priceError } = useCalculatePrice(investmentAmount, chainId)
 
-  // Debug: Log price data (immediate, not in useEffect)
-  if (typeof window !== 'undefined') {
-    const debugData = {
-      investmentAmount,
-      chainId,
-      priceData: priceData?.toString(),
-      isPriceError,
-      priceError: priceError?.message,
-      contractAddress,
-    }
-    console.log('💰 Price Debug:', debugData)
-    // @ts-ignore - Store in window for debugging
-    window.URBANIKA_PRICE_DEBUG = debugData
-  }
-
   // Oracle price hooks
   const { priceInUSD, getETHAmount, formattedPrice } = useETHPrice(chainId)
   const { getTierForAmount } = useInvestmentTiers()
@@ -123,22 +108,6 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
     selectedTokenAddress,
     chainId
   )
-
-  // Debug: Log token price data (immediate, not in useEffect)
-  if (typeof window !== 'undefined' && selectedToken !== 'ETH') {
-    const debugData = {
-      selectedToken,
-      selectedTokenAddress,
-      investmentAmount,
-      chainId,
-      tokenPriceData: tokenPriceData?.toString(),
-      isTokenPriceError,
-      tokenPriceError: tokenPriceError?.message,
-    }
-    console.log('💵 Token Price Debug:', debugData)
-    // @ts-ignore - Store in window for debugging
-    window.URBANIKA_TOKEN_PRICE_DEBUG = debugData
-  }
 
   // ERC20 token hook (for USDC/USDT)
   const {
@@ -208,6 +177,30 @@ export default function NFTPurchaseFlow({ onClose, initialAmount = 500 }: Purcha
       }
     }
   }, [isSuccess, hash, isPending, isConfirming, isTransactionError, transactionStatus, investmentAmount, chainId, leadId, step])
+
+  // Debug: Price calculation logs
+  useEffect(() => {
+    const debugData = {
+      investmentAmount,
+      chainId,
+      priceData: priceData?.toString(),
+      isPriceError,
+      priceError: priceError?.message,
+      contractAddress,
+      selectedToken,
+      tokenPriceData: tokenPriceData?.toString(),
+      isTokenPriceError,
+      tokenPriceError: tokenPriceError?.message,
+      selectedTokenAddress,
+    }
+    console.log('💰 Price Debug:', debugData)
+
+    // Store in window for manual inspection
+    if (typeof window !== 'undefined') {
+      // @ts-ignore
+      window.URBANIKA_DEBUG = debugData
+    }
+  }, [priceData, isPriceError, priceError, tokenPriceData, isTokenPriceError, tokenPriceError, investmentAmount, chainId, contractAddress, selectedToken, selectedTokenAddress])
 
   // Handle mint errors with better parsing
   useEffect(() => {
