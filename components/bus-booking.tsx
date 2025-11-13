@@ -97,7 +97,7 @@ const BusBooking = () => {
                     <h3 className="font-bold">Localizador en Vivo</h3>
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm">CDMX fue nuestra última ciudad...</span>
+                      <span className="text-sm">Monterrey fue nuestra última ciudad...</span>
                     </div>
                   </div>
                 </div>
@@ -114,7 +114,7 @@ const BusBooking = () => {
                       <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 text-center">
                         <MapPin className="h-8 w-8 text-brand-aqua mx-auto mb-2" />
                         <p className="font-semibold text-brand-dark">Próxima parada: Querétaro</p>
-                        <p className="text-sm text-gray-600">Llegada el 26 de Septiembre</p>
+                        <p className="text-sm text-gray-600">Llegada el 14 de Noviembre</p>
                       </div>
                     </div>
                   </div>
