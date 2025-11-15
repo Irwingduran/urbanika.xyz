@@ -12,7 +12,7 @@ import {
   Users,
   Vote,
   Gift,
-  Home,
+  Home, 
   Calculator,
   Zap,
   Target,
